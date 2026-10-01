@@ -35,6 +35,13 @@ def _load_builder():
 
 
 class NotificationStubTest(unittest.TestCase):
+    def test_second_line_is_checkmk_title(self):
+        # Checkmk uses line 2 ("# <title>") as the method name in the rule dropdown.
+        lines = SCRIPT.read_text(encoding="utf-8").splitlines()
+        self.assertEqual(lines[0], "#!/usr/bin/env python3")
+        self.assertEqual(lines[1], "# Apprise")
+        self.assertNotIn("bulk", lines[2].lower())
+
     def test_missing_parameters_is_permanent_failure(self):
         script = _load_script()
         self.assertEqual(script.main({}), script.EXIT_PERMANENT)
@@ -76,9 +83,21 @@ class RulesetWiringTest(unittest.TestCase):
                 if getattr(node.value.func, "id", "") == "NotificationParameters":
                     found[target] = kwargs
         self.assertEqual(len(found), 1)
-        (variable, kwargs), = found.items()
+        ((variable, kwargs),) = found.items()
         self.assertTrue(variable.startswith("rule_spec_"))
         self.assertEqual(kwargs["name"].value, SCRIPT.name)
+
+    def test_validator_messages_are_message_objects(self):
+        # A plain str crashes the Checkmk GUI with "'str' object has no attribute 'localize'".
+        calls = [
+            n
+            for n in ast.walk(self.tree)
+            if isinstance(n, ast.Call) and getattr(n.func, "id", "") == "MatchRegex"
+        ]
+        self.assertTrue(calls)
+        for call in calls:
+            self.assertEqual(len(call.args), 2)
+            self.assertEqual(getattr(call.args[1].func, "id", ""), "Message")
 
     def test_no_legacy_registry(self):
         self.assertNotIn("notification_parameter_registry", RULESET.read_text(encoding="utf-8"))

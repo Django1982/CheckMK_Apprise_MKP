@@ -7,7 +7,7 @@ script name (``~/local/share/check_mk/notifications/apprise``). Each dictionary
 key below reaches the script as ``NOTIFY_PARAMETER_<UPPERCASE_KEY>``.
 """
 
-from cmk.rulesets.v1 import Help, Title
+from cmk.rulesets.v1 import Help, Message, Title
 from cmk.rulesets.v1.form_specs import (
     BooleanChoice,
     DefaultValue,
@@ -42,7 +42,7 @@ def _parameter_form() -> Dictionary:
                     custom_validate=(
                         MatchRegex(
                             r"^https?://[^\s/?#@]+(:[0-9]+)?(/[^\s?#]*)?$",
-                            "Enter an http(s) URL without credentials, query or fragment.",
+                            Message("Enter an http(s) URL without credentials, query or fragment."),
                         ),
                     ),
                 ),
@@ -55,7 +55,7 @@ def _parameter_form() -> Dictionary:
                     custom_validate=(
                         MatchRegex(
                             r"^[A-Za-z0-9_-]{1,64}$",
-                            "Use 1-64 letters, digits, underscores or hyphens.",
+                            Message("Use 1-64 letters, digits, underscores or hyphens."),
                         ),
                     ),
                 ),

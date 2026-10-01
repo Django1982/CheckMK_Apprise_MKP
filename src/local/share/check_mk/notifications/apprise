@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
+# Apprise
+#
 # SPDX-License-Identifier: GPL-2.0-only
+# Line 2 above is the title Checkmk shows in the notification method dropdown;
+# line 3 must stay free of "Bulk: yes" (bulk notifications are out of scope).
 """Checkmk notification script ``apprise`` -- M0.2 skeleton stub.
 
 Delivery to the Apprise API is NOT implemented yet (milestone M1). The stub only
@@ -22,9 +26,7 @@ REQUIRED_PARAMETERS = ("BASE_URL", "CONFIG_ID")
 
 def missing_parameters(env: dict[str, str]) -> list[str]:
     return [
-        name
-        for name in REQUIRED_PARAMETERS
-        if not env.get(f"NOTIFY_PARAMETER_{name}", "").strip()
+        name for name in REQUIRED_PARAMETERS if not env.get(f"NOTIFY_PARAMETER_{name}", "").strip()
     ]
 
 
