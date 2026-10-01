@@ -32,8 +32,8 @@ EXIT_OK = 0
 EXIT_TEMPORARY = 1
 EXIT_PERMANENT = 2
 
-USER_AGENT = "checkmk-apprise-notification/0.3"
-SUPPORTED_FORMATS = ("markdown", "text", "html")
+USER_AGENT = "checkmk-apprise-notification/0.4"
+SUPPORTED_FORMATS = ("markdown", "text")  # html would need its own escaping; not offered
 CONFIG_ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 TIMEOUT_RANGE = (1, 120)
 DEFAULT_TIMEOUT = 10
@@ -278,13 +278,34 @@ def build_title(event: Event) -> str:
     return f"{label}: {subject}{state}"
 
 
-def build_body(event: Event) -> str:
+MARKDOWN_SPECIAL = "\\`*_[]<>~|#"
+
+
+def escape_markdown(value: str) -> str:
+    """Neutralize Markdown syntax in monitoring data (host names, plug-in output, ...)."""
+    escaped = "".join("\\" + ch if ch in MARKDOWN_SPECIAL else ch for ch in value)
+    # list markers only matter at the start of a line
+    escaped = re.sub(r"(?m)^(\s*)([+-])(\s)", r"\1\\\2\3", escaped)
+    return re.sub(r"(?m)^(\s*)(\d+)\.(\s)", r"\1\2\\.\3", escaped)
+
+
+def build_body(event: Event, message_format: str = "text") -> str:
+    markdown = message_format == "markdown"
+
     def lines(pairs: list[tuple[str, str]]) -> str:
-        return "\n".join(
-            f"{label}:{value}" if value.startswith("\n") else f"{label}: {value}"
-            for label, value in pairs
-            if value
-        )
+        rendered = []
+        for label, value in pairs:
+            if not value:
+                continue
+            if markdown:
+                value = escape_markdown(value)
+                label = f"**{label}:**"
+            else:
+                label = f"{label}:"
+            rendered.append(f"{label}{value}" if value.startswith("\n") else f"{label} {value}")
+        text = "\n".join(rendered)
+        # Markdown merges single newlines into one paragraph; two spaces force a line break
+        return "  \n".join(text.split("\n")) if markdown else text
 
     status = [("Service", event.service)] if event.what == "SERVICE" else []
     status += [("State", event.state), ("Output", event.output)]
@@ -305,7 +326,7 @@ def build_body(event: Event) -> str:
 def build_payload(config: Config, event: Event) -> dict[str, str]:
     payload = {
         "title": build_title(event),
-        "body": build_body(event),
+        "body": build_body(event, config.message_format),
         "type": map_type(event),
         "format": config.message_format,
     }
