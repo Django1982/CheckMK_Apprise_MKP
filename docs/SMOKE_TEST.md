@@ -28,16 +28,16 @@ Expected installed files:
 
 ## Checklist
 
-- [ ] `mkp add` / `mkp list` succeed; the notification script is executable (`ls -l`).
-- [ ] Setup > Events > Notifications > Add rule (set exactly one recipient, e.g. a single specific user, otherwise the script runs once per contact): method **Apprise** is selectable.
-- [ ] The parameter form renders without a traceback (check `~/var/log/web.log`).
-- [ ] Defaults shown: format Markdown, TLS verification on, timeout 10 s.
-- [ ] Invalid base URL / config ID is rejected by the form; valid values are saved and reloaded.
-- [ ] Open question: confirm the manifest value `version.packaged` is accepted.
-- [ ] Trigger a test notification (Setup > Notifications > test). The stub must print
+- [x] `mkp add` / `mkp list` succeed; the notification script is executable (`ls -l`).
+- [x] Setup > Events > Notifications > Add rule (set exactly one recipient, e.g. a single specific user, otherwise the script runs once per contact): method **Apprise** is selectable.
+- [x] The parameter form renders without a traceback (check `~/var/log/web.log`).
+- [x] Defaults shown: format Markdown, TLS verification on, timeout 10 s.
+- [x] Invalid base URL / config ID is rejected by the form; valid values are saved and reloaded.
+- [x] Open question: confirm the manifest value `version.packaged` is accepted.
+- [x] Trigger a test notification (Setup > Notifications > test; one problem and one recovery result are expected). The stub must print
       `Apprise notification not sent: delivery is not implemented ...` and exit with 2, without traceback.
 - [ ] Record the exact `NOTIFY_PARAMETER_*` names/values received (including the boolean and integer
       representations); the results feed M2.
-- [ ] `mkp remove apprise` deletes only the two files above.
+- [x] `mkp remove apprise` deletes only the two files above (the then-empty `notifications/` directory is removed too, which is expected).
 
 Record results in `PROJECT_STATUS.md` (verification log).
