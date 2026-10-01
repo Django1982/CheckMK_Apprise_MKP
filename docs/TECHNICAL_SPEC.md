@@ -93,7 +93,7 @@ Leave username/password unset for `public`. `locked` and `public` need a routing
 
 A `Password` form spec is flattened by Checkmk into `NOTIFY_PARAMETER_PASSWORD_1` (`cmk_postprocessed`), `_2` (`explicit_password` or `stored_password`), `_3_1` (id) and `_3_2` (value, empty for stored). An explicit password is read from `_3_2`. A stored password is resolved with `cmk.utils.password_store.extract(id)`, imported lazily and only for stored passwords.
 
-**Decision needing maintainer approval:** `cmk.utils.password_store` is not a documented public extension API. It is what Checkmk's bundled notification plugins use, and its docstring says it is intended for third-party plugins and must not change behavior. No public alternative for resolving the store in a notification script was found. If it is unavailable, the script exits 2 with a generic message. Credentials over plain `http://` are allowed but print a visible warning.
+**Decision (approved by the maintainer on 2026-10-01, on a test instance):** `cmk.utils.password_store` is not a documented public extension API. It is what Checkmk's bundled notification plugins use, and its docstring says it is intended for third-party plugins and must not change behavior. No public alternative for resolving the store in a notification script was found. If it is unavailable, the script exits 2 with a generic message. Credentials over plain `http://` are allowed but print a visible warning.
 
 ## Apprise endpoint
 
