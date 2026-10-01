@@ -41,7 +41,7 @@ src/local/lib/python3/cmk_addons/plugins/apprise/rulesets/notification.py
 Use Checkmk Ruleset API v1 `NotificationParameters`. The variable should follow Checkmk's discovery convention (`rule_spec_...`) and:
 
 ```python
-name="apprise"
+name = "apprise"
 ```
 
 must match the notification script name.

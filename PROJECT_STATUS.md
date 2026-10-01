@@ -5,7 +5,7 @@
 ## Current state
 
 - **Active milestone:** M0.2 – Technical Skeleton
-- **Overall status:** M0.2 implemented, not verified (no Checkmk 2.5 site available yet)
+- **Overall status:** M0.2 verified on a Checkmk 2.5 test site; M1 not started
 - **Last verified milestone:** M0.1 – Project Preparation
 - **Last updated:** 2026-10-01
 - **Updated by:** Claude Code (M0.2 implementation session)
@@ -15,7 +15,7 @@
 | Milestone | Status | Verification |
 |---|---|---|
 | M0.1 – Project Preparation | done | planning/repository baseline prepared; repository sanity assets included |
-| M0.2 – Technical Skeleton | implemented, not verified | local unit tests/lint/build pass; install on Checkmk 2.5 site pending (`docs/SMOKE_TEST.md`) |
+| M0.2 – Technical Skeleton | verified | install/enable/uninstall, method selectable, form + validation + save/reload, stub invocation (exit 2) verified manually on a Checkmk 2.5 site (Python 3.13); `NOTIFY_PARAMETER_*` value dump deferred to M2 |
 | M1 – Notification Core | not started | not yet implemented |
 | M2 – Native Checkmk UX | not started | not yet implemented |
 | M3 – Routing & Formatting | not started | not yet implemented |
@@ -40,14 +40,16 @@ Implement M0.2 according to `CODINGAGENT_TASK.md` and `docs/DEVELOPMENT_PLAN.md`
 
 ## In progress
 
-M0.2: code complete locally; waiting for the Checkmk 2.5 smoke test. M1 not started.
+M0.2 verified (see log). Open carry-over: record real `NOTIFY_PARAMETER_*` names/value formats (bool/int/empty tag) in M2. M1 not started.
 
 ## Blockers
 
-- No Checkmk 2.5 test site available to this agent: install, UI rendering and stub invocation are unverified.
-- `cmk` API imports in the ruleset are written from the public docs (NotificationParameters signature checked) but never executed.
-- Unverified assumptions: `version.packaged` value in the MKP manifest (`2.5.0`); manifest `author` taken from git user name; notification script mode 0755 is forced by the builder (git index mode not set).
-- The stub exits 2 on purpose (not 0) so it is not mistaken for working delivery.
+None. Notes:
+
+- The site runs Python 3.13 (Checkmk 2.5); `pyproject.toml` still targets py312, harmless.
+- Lessons: notification script line 2 must be `# <title>` (Checkmk dropdown name); `MatchRegex` error messages must be `Message(...)`, not `str`.
+- Documentation TODO (M5): configure exactly one recipient in the Checkmk rule; "all contacts" calls the script once per contact and would send duplicates to Apprise.
+- The stub exits 2 on purpose so it is not mistaken for working delivery.
 
 ## Decisions that must be preserved
 
@@ -70,13 +72,13 @@ Record only commands that were actually executed. Replace/add rows as work progr
 | 2026-10-01 | `python -m unittest discover -s tests/unit -v` | passed (6 tests) | Python 3.10 locally; CI uses 3.12 |
 | 2026-10-01 | `python -m ruff check .` | passed | ruff 0.16.9 |
 | 2026-10-01 | `python scripts/build_mkp.py` | passed | apprise-0.1.0.mkp, reproducible (tested) |
-| - | install on Checkmk 2.5 site | not run | see `docs/SMOKE_TEST.md` |
+| 2026-10-01 | manual: mkp add/enable, method selectable, form, validation, save/reload, mkp remove | passed | after fixes for script title line and `Message` validator crash; Checkmk 2.5 test site `dev` |
+| 2026-10-01 | manual: test notification (host, recipient cmkadmin) | passed | stub output shown, exit 2, no traceback |
+| - | `NOTIFY_PARAMETER_*` dump | not run | needs Apprise-independent temporary dump; moved to M2 |
 
 ## Next concrete actions
 
-1. Run `docs/SMOKE_TEST.md` on a Checkmk 2.5 test site; fix findings; mark M0.2 `verified`/`done`.
-2. Record the actual `NOTIFY_PARAMETER_*` names/value formats (bool/int) from that run.
-3. Start M1 (notification core) per `CODINGAGENT_TASK.md`.
+1. Start M1 (notification core) per `CODINGAGENT_TASK.md`.
 
 ## Handoff notes
 

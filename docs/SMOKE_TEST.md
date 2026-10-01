@@ -1,6 +1,6 @@
 # M0.2 Smoke Test: Install into a clean Checkmk 2.5 site
 
-Use a dedicated test site, never production. Status of this checklist: **not yet executed** (no Checkmk 2.5 site was available during implementation).
+Use a dedicated test site, never production. Status: executed manually on a Checkmk 2.5 test site (see `PROJECT_STATUS.md`); the parameter-dump item is deferred to M2.
 
 ## Build
 
@@ -29,7 +29,7 @@ Expected installed files:
 ## Checklist
 
 - [ ] `mkp add` / `mkp list` succeed; the notification script is executable (`ls -l`).
-- [ ] Setup > Events > Notifications > Add rule: method **Apprise** is selectable.
+- [ ] Setup > Events > Notifications > Add rule (set exactly one recipient, e.g. a single specific user, otherwise the script runs once per contact): method **Apprise** is selectable.
 - [ ] The parameter form renders without a traceback (check `~/var/log/web.log`).
 - [ ] Defaults shown: format Markdown, TLS verification on, timeout 10 s.
 - [ ] Invalid base URL / config ID is rejected by the form; valid values are saved and reloaded.
