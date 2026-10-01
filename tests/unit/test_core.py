@@ -301,7 +301,11 @@ class MessageTest(unittest.TestCase):
 
     def test_long_output_section(self):
         env = {**fixture("service_critical"), "NOTIFY_LONGSERVICEOUTPUT": "line1\\nline2"}
-        self.assertIn("Details: \nline1\nline2", apprise.build_body(apprise.parse_event(env)))
+        self.assertIn("\nDetails:\nline1\nline2", apprise.build_body(apprise.parse_event(env)))
+
+    def test_long_output_identical_to_output_is_not_repeated(self):
+        env = {**fixture("service_critical"), "NOTIFY_LONGSERVICEOUTPUT": "CPU utilization: 97.8%"}
+        self.assertNotIn("Details", apprise.build_body(apprise.parse_event(env)))
 
     def test_deterministic(self):
         ev = event("service_critical")

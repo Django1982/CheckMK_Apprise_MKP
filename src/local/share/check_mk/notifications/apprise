@@ -237,11 +237,15 @@ def build_title(event: Event) -> str:
 
 def build_body(event: Event) -> str:
     def lines(pairs: list[tuple[str, str]]) -> str:
-        return "\n".join(f"{label}: {value}" for label, value in pairs if value)
+        return "\n".join(
+            f"{label}:{value}" if value.startswith("\n") else f"{label}: {value}"
+            for label, value in pairs
+            if value
+        )
 
     status = [("Service", event.service)] if event.what == "SERVICE" else []
     status += [("State", event.state), ("Output", event.output)]
-    if event.long_output:
+    if event.long_output and event.long_output != event.output:
         status.append(("Details", "\n" + event.long_output))
     if event.comment:
         author = f" ({event.author})" if event.author else ""
