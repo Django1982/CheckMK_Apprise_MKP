@@ -17,7 +17,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Set up Python
+      - name: Set up Python 3.12
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
@@ -27,7 +27,16 @@ jobs:
           python -m pip install ruff
           ruff check .
 
-      - name: Unit tests
+      - name: Unit tests (Python 3.12)
+        run: python -m unittest discover -s tests/unit -v
+
+      # Checkmk 2.5 sites run Python 3.13
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Unit tests (Python 3.13)
         run: python -m unittest discover -s tests/unit -v
 
       - name: Build MKP

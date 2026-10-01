@@ -307,6 +307,7 @@ class EventParsingTest(unittest.TestCase):
             {},
             {"NOTIFY_WHAT": "HOST"},
             {"NOTIFY_WHAT": "SERVICE", "NOTIFY_HOSTNAME": "h"},
+            {"NOTIFY_WHAT": "HOST", "NOTIFY_HOSTNAME": "h"},  # no NOTIFICATIONTYPE
         ]:
             with self.subTest(env=env), self.assertRaises(apprise.ConfigError):
                 apprise.parse_event(env)
@@ -483,7 +484,9 @@ class StatusClassificationTest(unittest.TestCase):
     def test_matrix(self):
         expected = {
             200: 0,
-            204: 0,
+            201: 2,
+            202: 2,
+            204: 2,
             408: 1,
             424: 1,
             429: 1,
@@ -566,9 +569,9 @@ class TransportTest(unittest.TestCase):
         self.assertIn("connection error", out)
 
     def test_dns_failure_is_temporary(self):
-        code, out = run_main(
-            {**fixture("service_critical"), **parameters(base_url="http://no-such-host.invalid")}
-        )
+        env = {**fixture("service_critical"), **parameters(base_url="http://apprise.invalid")}
+        with mock.patch("socket.getaddrinfo", side_effect=socket.gaierror(-2, "unknown")):
+            code, out = run_main(env)
         self.assertEqual(code, 1)
         self.assertIn("DNS", out)
 
@@ -609,10 +612,18 @@ class TransportTest(unittest.TestCase):
     def test_tls_opt_out_prints_visible_warning(self):
         env = {
             **fixture("service_critical"),
-            **parameters(base_url="http://127.0.0.1:1", verify_tls="false"),
+            **parameters(base_url="https://127.0.0.1:1", verify_tls="false"),
         }
         _, out = run_main(env)
         self.assertIn("WARNING: TLS certificate verification is disabled", out)
+
+    def test_no_tls_warning_for_plain_http(self):
+        env = {
+            **fixture("service_critical"),
+            **parameters(base_url="http://127.0.0.1:1", verify_tls="false"),
+        }
+        _, out = run_main(env)
+        self.assertNotIn("TLS", out)
 
 
 if __name__ == "__main__":

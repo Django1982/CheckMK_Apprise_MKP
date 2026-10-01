@@ -8,12 +8,12 @@ M0.2 skeleton implemented (notification stub, ruleset form, MKP builder); delive
 
 ```bash
 python -m unittest discover -s tests/unit -v              # all tests
-python -m unittest tests.unit.test_skeleton.MkpBuildTest  # single test class (run from repo root)
+python -m unittest discover -s tests/unit -k MkpBuildTest  # single test (substring match)
 python -m ruff check .                                    # lint (config in pyproject.toml)
 python scripts/build_mkp.py                               # builds dist/apprise-<version>.mkp
 ```
 
-CI: `repository-sanity` (required files/dirs, private-key scan) and `unit-tests` (ruff, unittest, MKP build). Do not delete the files/dirs `repository-sanity` checks. `cmk` is not installable locally, so the ruleset file is only checked statically in tests; real verification needs a Checkmk 2.5 site (`docs/SMOKE_TEST.md`).
+CI: `repository-sanity` (required files/dirs, private-key scan) and `unit-tests` (ruff, unittest on Python 3.12 and 3.13, MKP build). Do not delete the files/dirs `repository-sanity` checks. `cmk` is not installable locally, so the ruleset file is only checked statically in tests; real verification needs a Checkmk 2.5 site (`docs/SMOKE_TEST.md`).
 
 ## Read first (agent-neutral source of truth)
 

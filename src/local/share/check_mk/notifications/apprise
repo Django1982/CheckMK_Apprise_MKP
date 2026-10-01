@@ -206,10 +206,14 @@ def parse_event(env: dict[str, str]) -> Event:
     if what == "SERVICE" and not service:
         raise ConfigError("Checkmk event invalid: missing NOTIFY_SERVICEDESC")
 
+    notification_type = ctx("NOTIFICATIONTYPE").upper()
+    if not notification_type:
+        raise ConfigError("Checkmk event invalid: missing NOTIFY_NOTIFICATIONTYPE")
+
     prefix = "HOST" if what == "HOST" else "SERVICE"
     return Event(
         what=what,
-        notification_type=ctx("NOTIFICATIONTYPE").upper() or "PROBLEM",
+        notification_type=notification_type,
         host=host,
         address=ctx("HOSTADDRESS"),
         site=ctx("OMD_SITE"),
@@ -326,8 +330,13 @@ def build_ssl_context(verify: bool) -> ssl.SSLContext:
 
 
 def classify_status(status: int) -> int:
-    """Map an HTTP status to a Checkmk exit code (matrix is documented in M4)."""
-    if 200 <= status < 300:
+    """Map an HTTP status to a Checkmk exit code (matrix: docs/TECHNICAL_SPEC.md).
+
+    Only 200 counts as delivered: Apprise answers 200 once the notification is sent.
+    Older Apprise API versions answered 204 for a key without (or with an empty)
+    configuration, which means nothing was sent, so every other 2xx is a failure too.
+    """
+    if status == 200:
         return EXIT_OK
     if status in (408, 424, 429) or status >= 500:
         return EXIT_TEMPORARY
@@ -352,12 +361,18 @@ def _status_result(status: int) -> Result:
         hint = " - check Config ID, routing tag and Apprise access mode"
     elif 300 <= status < 400:
         hint = " - redirects are not followed, use the final Apprise URL"
+    elif 200 <= status < 300:
+        hint = " - nothing was sent; check that the Config ID has a saved configuration"
     return Result(code, f"Apprise notification permanently failed: HTTP {status}{hint}")
 
 
 def _error_result(error: BaseException) -> Result:
     reason = error.reason if isinstance(error, urllib.error.URLError) else error
-    if isinstance(reason, ssl.SSLError):
+    if isinstance(reason, ssl.SSLCertVerificationError):
+        # Kept temporary on purpose: losing an alert because of a certificate that an
+        # administrator may fix within Checkmk's retry window is worse than a retry.
+        category = "TLS certificate verification failed (check CA, host name and expiry)"
+    elif isinstance(reason, ssl.SSLError):
         category = "TLS error"
     elif isinstance(reason, socket.gaierror):
         category = "DNS resolution failed"
@@ -383,7 +398,9 @@ def send(config: Config, payload: dict[str, str]) -> Result:
         headers=headers,
         method="POST",
     )
-    handlers: list = [_NoRedirect()]
+    # Proxies from the site environment are ignored on purpose: the request goes
+    # directly to the configured Apprise server (deterministic, no implicit proxy).
+    handlers: list = [urllib.request.ProxyHandler({}), _NoRedirect()]
     if config.base_url.startswith("https://"):
         handlers.append(urllib.request.HTTPSHandler(context=build_ssl_context(config.verify_tls)))
     opener = urllib.request.build_opener(*handlers)
@@ -407,7 +424,7 @@ def main(env: dict[str, str]) -> int:
     except ConfigError as error:
         print(f"Apprise configuration invalid: {error}")
         return EXIT_PERMANENT
-    if not config.verify_tls:
+    if not config.verify_tls and config.base_url.startswith("https://"):
         print("WARNING: TLS certificate verification is disabled")
     if config.username and config.base_url.startswith("http://"):
         print("WARNING: credentials are sent over unencrypted HTTP")

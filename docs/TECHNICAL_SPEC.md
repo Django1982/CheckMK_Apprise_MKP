@@ -136,19 +136,23 @@ These semantics are normative:
 | 1 | Could not send now; retry later | timeout, temporary DNS/network issue, retryable server response |
 | 2 | Cannot send; retry does not make sense | malformed local configuration, invalid permanent request/auth failure |
 
-The exact HTTP classification matrix is finalized in M4. Avoid treating every non-2xx response identically.
+Avoid treating every non-2xx response identically; the matrix below is the contract.
 
-Implemented in M1 (provisional until M4; `classify_status` in the script):
+Implemented classification (`classify_status` / `_error_result` in the script):
 
 | Outcome | Exit | Reason |
 |---|---:|---|
-| 2xx | 0 | accepted |
+| 200 | 0 | Apprise answers 200 once the notification is delivered |
+| any other 2xx (incl. 204) | 2 | not a delivery confirmation; older Apprise API versions answered 204 for a key without (or with an empty) configuration, i.e. nothing was sent |
 | 408, 429, 5xx | 1 | transient / rate limit / server side |
-| 424 | 1 | Apprise accepted the request but a downstream provider failed; may be transient |
-| timeout, DNS failure, connection error, TLS error | 1 | do not lose the alert; the problem is usually fixable outside the notification |
-| other 3xx | 2 | redirects are deliberately not followed |
-| 400, 401, 403, 404, 406, 409, 431 and other 4xx | 2 | request/configuration problem, retrying cannot help |
-| invalid local configuration or Checkmk event | 2 | nothing to retry |
+| 424 | 1 | Apprise could not deliver. Deliberate trade-off: Apprise uses 424 both for provider outages (transient) and for a tag that matches no target (permanent); retrying is preferred over losing an alert. Repeated 424 means: check routing tags and the Apprise configuration |
+| timeout, DNS failure, connection refused/reset, TLS handshake error | 1 | usually fixable outside the notification |
+| TLS certificate verification failure | 1 | deliberate trade-off: an administrator can fix the CA/host name/expiry within Checkmk's retry window; the message says what to check. Revisit if users prefer exit 2 |
+| 3xx | 2 | redirects are deliberately not followed |
+| 400, 401, 403, 404, 406, 409, 413, 431 and other 4xx | 2 | request/configuration problem, retrying cannot help |
+| invalid local configuration, invalid Checkmk event (including a missing `NOTIFY_NOTIFICATIONTYPE`), unreadable password | 2 | nothing to retry |
+
+Environment proxy variables (`http_proxy`, ...) are deliberately ignored; the request goes directly to the configured Apprise server. Response bodies are read (at most 4 KiB) but never logged.
 
 ## Proposed state/event → Apprise type mapping
 
