@@ -3,7 +3,6 @@
 
 import ast
 import gzip
-import importlib.machinery
 import importlib.util
 import io
 import json
@@ -17,14 +16,6 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[2]
 SCRIPT = REPO / "src/local/share/check_mk/notifications/apprise"
 RULESET = REPO / "src/local/lib/python3/cmk_addons/plugins/apprise/rulesets/notification.py"
-
-
-def _load_script():
-    loader = importlib.machinery.SourceFileLoader("apprise_script", str(SCRIPT))
-    spec = importlib.util.spec_from_loader("apprise_script", loader)
-    module = importlib.util.module_from_spec(spec)
-    loader.exec_module(module)
-    return module
 
 
 def _load_builder():
@@ -42,30 +33,14 @@ class NotificationStubTest(unittest.TestCase):
         self.assertEqual(lines[1], "# Apprise")
         self.assertNotIn("bulk", lines[2].lower())
 
-    def test_missing_parameters_is_permanent_failure(self):
-        script = _load_script()
-        self.assertEqual(script.main({}), script.EXIT_PERMANENT)
-
-    def test_missing_parameters_are_listed(self):
-        script = _load_script()
-        self.assertEqual(
-            script.missing_parameters({"NOTIFY_PARAMETER_BASE_URL": "https://a.example"}),
-            ["CONFIG_ID"],
-        )
-
-    def test_stub_runs_without_traceback_and_without_secrets(self):
-        env = {
-            **os.environ,
-            "NOTIFY_PARAMETER_BASE_URL": "https://apprise.example.net",
-            "NOTIFY_PARAMETER_CONFIG_ID": "checkmk",
-            "NOTIFY_PARAMETER_PASSWORD": "s3cret-value",
-        }
+    def test_missing_parameters_is_permanent_failure_without_traceback(self):
+        env = {k: v for k, v in os.environ.items() if not k.startswith("NOTIFY_")}
         proc = subprocess.run(
             [sys.executable, str(SCRIPT)], env=env, capture_output=True, text=True, timeout=30
         )
         self.assertEqual(proc.returncode, 2)
+        self.assertIn("Apprise configuration invalid", proc.stdout)
         self.assertNotIn("Traceback", proc.stderr)
-        self.assertNotIn("s3cret-value", proc.stdout + proc.stderr)
 
 
 class RulesetWiringTest(unittest.TestCase):

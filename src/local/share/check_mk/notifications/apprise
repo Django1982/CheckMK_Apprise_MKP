@@ -4,39 +4,365 @@
 # SPDX-License-Identifier: GPL-2.0-only
 # Line 2 above is the title Checkmk shows in the notification method dropdown;
 # line 3 must stay free of "Bulk: yes" (bulk notifications are out of scope).
-"""Checkmk notification script ``apprise`` -- M0.2 skeleton stub.
+"""Checkmk notification script ``apprise``: forwards a notification to an Apprise API server.
 
-Delivery to the Apprise API is NOT implemented yet (milestone M1). The stub only
-checks that Checkmk handed over the expected parameters, prints a short and
-secret-free message and exits with 2 (permanent failure) so that no one mistakes
-it for a working delivery.
+Pipeline (each step is a small pure function, see below):
+    env -> parse_config / parse_event -> map_type -> build_title / build_body
+        -> build_payload -> send (bounded HTTP) -> classify_status -> exit code
 
-Exit codes follow Checkmk: 0 sent, 1 retry later, 2 do not retry.
+Exit codes follow Checkmk: 0 sent, 1 temporary failure (retry later),
+2 permanent failure (retry does not make sense).
+
+Secrets/URLs are never printed: diagnostics only name the failing category.
 """
 
+import json
 import os
+import re
+import socket
+import ssl
 import sys
+import urllib.error
+import urllib.parse
+import urllib.request
+from dataclasses import dataclass
 
 EXIT_OK = 0
 EXIT_TEMPORARY = 1
 EXIT_PERMANENT = 2
 
-REQUIRED_PARAMETERS = ("BASE_URL", "CONFIG_ID")
+USER_AGENT = "checkmk-apprise-notification/0.2"
+SUPPORTED_FORMATS = ("markdown", "text", "html")
+CONFIG_ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
+TIMEOUT_RANGE = (1, 120)
+DEFAULT_TIMEOUT = 10
+
+MAX_FIELD_CHARS = 1000
+MAX_LONG_OUTPUT_CHARS = 4000
+DRAIN_BYTES = 4096  # response bodies are read (bounded) but never logged
+
+PARAMETER_PREFIX = "NOTIFY_PARAMETER_"
 
 
-def missing_parameters(env: dict[str, str]) -> list[str]:
-    return [
-        name for name in REQUIRED_PARAMETERS if not env.get(f"NOTIFY_PARAMETER_{name}", "").strip()
+class ConfigError(Exception):
+    """Invalid local configuration or Checkmk event; retrying cannot help."""
+
+
+@dataclass(frozen=True)
+class Config:
+    base_url: str
+    config_id: str
+    tag: str
+    message_format: str
+    verify_tls: bool
+    timeout: int
+
+
+@dataclass(frozen=True)
+class Event:
+    what: str  # HOST | SERVICE
+    notification_type: str  # PROBLEM, RECOVERY, ACKNOWLEDGEMENT, ...
+    host: str
+    address: str
+    site: str
+    state: str
+    output: str
+    service: str
+    long_output: str
+    author: str
+    comment: str
+
+
+@dataclass(frozen=True)
+class Result:
+    exit_code: int
+    message: str
+
+
+# --- parsing -------------------------------------------------------------------------------
+
+
+def parse_bool(value: str, name: str) -> bool:
+    lowered = value.strip().lower()
+    if lowered in ("true", "1", "yes", "on"):
+        return True
+    if lowered in ("false", "0", "no", "off"):
+        return False
+    raise ConfigError(f"invalid boolean for {name}")
+
+
+def validate_base_url(raw: str) -> str:
+    parts = urllib.parse.urlsplit(raw.strip())
+    if parts.scheme not in ("http", "https") or not parts.hostname:
+        raise ConfigError("BASE_URL must be an http(s) URL")
+    if parts.username is not None or parts.password is not None or "@" in parts.netloc:
+        raise ConfigError("BASE_URL must not contain credentials")
+    if parts.query or parts.fragment:
+        raise ConfigError("BASE_URL must not contain a query or fragment")
+    try:
+        parts.port  # noqa: B018 - raises ValueError for an invalid port
+    except ValueError:
+        raise ConfigError("BASE_URL has an invalid port") from None
+    return urllib.parse.urlunsplit((parts.scheme, parts.netloc, parts.path.rstrip("/"), "", ""))
+
+
+def parse_config(env: dict[str, str]) -> Config:
+    def param(name: str) -> str:
+        return env.get(PARAMETER_PREFIX + name, "").strip()
+
+    missing = [name for name in ("BASE_URL", "CONFIG_ID") if not param(name)]
+    if missing:
+        raise ConfigError("missing " + ", ".join(missing))
+
+    config_id = param("CONFIG_ID")
+    if not CONFIG_ID_RE.match(config_id):
+        raise ConfigError("CONFIG_ID has an invalid format")
+
+    message_format = param("MESSAGE_FORMAT") or "markdown"
+    if message_format not in SUPPORTED_FORMATS:
+        raise ConfigError("MESSAGE_FORMAT is not supported")
+
+    verify_raw = param("VERIFY_TLS")
+    verify_tls = parse_bool(verify_raw, "VERIFY_TLS") if verify_raw else True
+
+    timeout_raw = param("TIMEOUT")
+    try:
+        timeout = int(timeout_raw) if timeout_raw else DEFAULT_TIMEOUT
+    except ValueError:
+        raise ConfigError("TIMEOUT must be an integer") from None
+    if not TIMEOUT_RANGE[0] <= timeout <= TIMEOUT_RANGE[1]:
+        raise ConfigError(f"TIMEOUT must be between {TIMEOUT_RANGE[0]} and {TIMEOUT_RANGE[1]}")
+
+    return Config(
+        base_url=validate_base_url(param("BASE_URL")),
+        config_id=config_id,
+        tag=param("TAG"),
+        message_format=message_format,
+        verify_tls=verify_tls,
+        timeout=timeout,
+    )
+
+
+def clean_text(value: str, limit: int = MAX_FIELD_CHARS) -> str:
+    """Drop control characters (keeping newlines) and bound the length."""
+    value = value.replace("\\n", "\n")  # Checkmk escapes newlines in plugin output
+    value = "".join(ch for ch in value if ch == "\n" or ch >= " " and ch != "\x7f")
+    value = value.strip()
+    if len(value) > limit:
+        value = value[: limit - 1].rstrip() + "…"
+    return value
+
+
+def parse_event(env: dict[str, str]) -> Event:
+    def ctx(name: str, limit: int = MAX_FIELD_CHARS) -> str:
+        return clean_text(env.get("NOTIFY_" + name, ""), limit)
+
+    what = ctx("WHAT").upper()
+    if what not in ("HOST", "SERVICE"):
+        raise ConfigError("Checkmk event invalid: NOTIFY_WHAT must be HOST or SERVICE")
+    host = ctx("HOSTNAME")
+    if not host:
+        raise ConfigError("Checkmk event invalid: missing NOTIFY_HOSTNAME")
+    service = ctx("SERVICEDESC")
+    if what == "SERVICE" and not service:
+        raise ConfigError("Checkmk event invalid: missing NOTIFY_SERVICEDESC")
+
+    prefix = "HOST" if what == "HOST" else "SERVICE"
+    return Event(
+        what=what,
+        notification_type=ctx("NOTIFICATIONTYPE").upper() or "PROBLEM",
+        host=host,
+        address=ctx("HOSTADDRESS"),
+        site=ctx("OMD_SITE"),
+        state=ctx(prefix + "STATE").upper(),
+        output=ctx(prefix + "OUTPUT", MAX_LONG_OUTPUT_CHARS),
+        service=service if what == "SERVICE" else "",
+        long_output=ctx("LONGSERVICEOUTPUT", MAX_LONG_OUTPUT_CHARS) if what == "SERVICE" else "",
+        author=ctx("NOTIFICATIONAUTHOR"),
+        comment=ctx("NOTIFICATIONCOMMENT"),
+    )
+
+
+# --- event -> message ----------------------------------------------------------------------
+
+# Event types that decide the Apprise type regardless of the current state.
+EVENT_TYPE_MAP = {
+    "RECOVERY": "success",
+    "ACKNOWLEDGEMENT": "info",
+    "DOWNTIMESTART": "info",
+    "DOWNTIMEEND": "info",
+    "DOWNTIMECANCELLED": "warning",
+    "FLAPPINGSTART": "warning",
+    "FLAPPINGSTOP": "info",  # flapping stopped does not imply a healthy state
+    "FLAPPINGDISABLED": "info",
+    "CUSTOM": "info",
+}
+STATE_TYPE_MAP = {
+    "OK": "success",
+    "UP": "success",
+    "WARNING": "warning",
+    "UNKNOWN": "warning",
+    "UNREACHABLE": "warning",
+    "CRITICAL": "failure",
+    "DOWN": "failure",
+}
+EVENT_LABELS = {
+    "RECOVERY": "RECOVERY",
+    "ACKNOWLEDGEMENT": "ACKNOWLEDGEMENT",
+    "DOWNTIMESTART": "DOWNTIME START",
+    "DOWNTIMEEND": "DOWNTIME END",
+    "DOWNTIMECANCELLED": "DOWNTIME CANCELLED",
+    "FLAPPINGSTART": "FLAPPING START",
+    "FLAPPINGSTOP": "FLAPPING STOP",
+    "FLAPPINGDISABLED": "FLAPPING DISABLED",
+    "CUSTOM": "CUSTOM",
+}
+
+
+def map_type(event: Event) -> str:
+    """Apprise type for an event; the event type wins over the current state."""
+    if event.notification_type in EVENT_TYPE_MAP:
+        return EVENT_TYPE_MAP[event.notification_type]
+    return STATE_TYPE_MAP.get(event.state, "info")
+
+
+def build_title(event: Event) -> str:
+    subject = event.host if event.what == "HOST" else f"{event.host} - {event.service}"
+    label = EVENT_LABELS.get(event.notification_type)
+    if label is None:  # PROBLEM and anything unknown: lead with the state
+        return f"{event.state or event.notification_type}: {subject}"
+    state = f" ({event.state})" if event.state else ""
+    return f"{label}: {subject}{state}"
+
+
+def build_body(event: Event) -> str:
+    def lines(pairs: list[tuple[str, str]]) -> str:
+        return "\n".join(f"{label}: {value}" for label, value in pairs if value)
+
+    status = [("Service", event.service)] if event.what == "SERVICE" else []
+    status += [("State", event.state), ("Output", event.output)]
+    if event.long_output:
+        status.append(("Details", "\n" + event.long_output))
+    if event.comment:
+        author = f" ({event.author})" if event.author else ""
+        status.append(("Comment", event.comment + author))
+    context = [
+        ("Host", event.host),
+        ("Address", event.address),
+        ("Site", event.site),
+        ("Notification", event.notification_type),
     ]
+    return "\n\n".join(block for block in (lines(status), lines(context)) if block)
+
+
+def build_payload(config: Config, event: Event) -> dict[str, str]:
+    payload = {
+        "title": build_title(event),
+        "body": build_body(event),
+        "type": map_type(event),
+        "format": config.message_format,
+    }
+    if config.tag:
+        payload["tag"] = config.tag
+    return payload
+
+
+# --- transport -----------------------------------------------------------------------------
+
+
+def build_url(config: Config) -> str:
+    return f"{config.base_url}/notify/{urllib.parse.quote(config.config_id, safe='')}"
+
+
+def build_ssl_context(verify: bool) -> ssl.SSLContext:
+    context = ssl.create_default_context()
+    if not verify:
+        context.check_hostname = False
+        context.verify_mode = ssl.CERT_NONE
+    return context
+
+
+def classify_status(status: int) -> int:
+    """Map an HTTP status to a Checkmk exit code (matrix is documented in M4)."""
+    if 200 <= status < 300:
+        return EXIT_OK
+    if status in (408, 424, 429) or status >= 500:
+        return EXIT_TEMPORARY
+    return EXIT_PERMANENT
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # noqa: ANN001, ARG002
+        return None  # surfaces the 3xx as HTTPError instead of following it
+
+
+def _status_result(status: int) -> Result:
+    code = classify_status(status)
+    if code == EXIT_OK:
+        return Result(EXIT_OK, f"Apprise notification delivered (HTTP {status})")
+    if code == EXIT_TEMPORARY:
+        return Result(code, f"Apprise notification temporarily failed: HTTP {status}")
+    hint = ""
+    if status in (400, 401, 403, 404):
+        hint = " - check Config ID, routing tag and Apprise access mode"
+    elif 300 <= status < 400:
+        hint = " - redirects are not followed, use the final Apprise URL"
+    return Result(code, f"Apprise notification permanently failed: HTTP {status}{hint}")
+
+
+def _error_result(error: BaseException) -> Result:
+    reason = error.reason if isinstance(error, urllib.error.URLError) else error
+    if isinstance(reason, ssl.SSLError):
+        category = "TLS error"
+    elif isinstance(reason, socket.gaierror):
+        category = "DNS resolution failed"
+    elif isinstance(reason, TimeoutError):
+        category = "timeout"
+    else:
+        category = "connection error"
+    return Result(EXIT_TEMPORARY, f"Apprise notification temporarily failed: {category}")
+
+
+def send(config: Config, payload: dict[str, str]) -> Result:
+    request = urllib.request.Request(  # noqa: S310 - scheme validated in validate_base_url
+        build_url(config),
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "User-Agent": USER_AGENT,
+        },
+        method="POST",
+    )
+    handlers: list = [_NoRedirect()]
+    if config.base_url.startswith("https://"):
+        handlers.append(urllib.request.HTTPSHandler(context=build_ssl_context(config.verify_tls)))
+    opener = urllib.request.build_opener(*handlers)
+    try:
+        with opener.open(request, timeout=config.timeout) as response:
+            response.read(DRAIN_BYTES)
+            return _status_result(response.status)
+    except urllib.error.HTTPError as error:
+        error.close()
+        return _status_result(error.code)
+    except (OSError, ValueError) as error:  # URLError, timeouts, TLS, connection resets
+        return _error_result(error)
+    except Exception:  # noqa: BLE001 - e.g. http.client errors; never leak the text
+        return Result(EXIT_TEMPORARY, "Apprise notification temporarily failed: protocol error")
 
 
 def main(env: dict[str, str]) -> int:
-    missing = missing_parameters(env)
-    if missing:
-        print("Apprise configuration invalid: missing " + ", ".join(missing))
+    try:
+        config = parse_config(env)
+        event = parse_event(env)
+    except ConfigError as error:
+        print(f"Apprise configuration invalid: {error}")
         return EXIT_PERMANENT
-    print("Apprise notification not sent: delivery is not implemented in this skeleton version")
-    return EXIT_PERMANENT
+    if not config.verify_tls:
+        print("WARNING: TLS certificate verification is disabled")
+    result = send(config, build_payload(config, event))
+    print(result.message)
+    return result.exit_code
 
 
 if __name__ == "__main__":

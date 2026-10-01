@@ -4,9 +4,9 @@
 
 ## Current state
 
-- **Active milestone:** M0.2 – Technical Skeleton
-- **Overall status:** M0.2 verified on a Checkmk 2.5 test site; M1 not started
-- **Last verified milestone:** M0.1 – Project Preparation
+- **Active milestone:** M1 – Notification Core (branch `feat/notification-core`)
+- **Overall status:** M0.2 done (merged, PR #3); M1 implemented, not verified end-to-end (unit tests only, no Apprise server yet)
+- **Last verified milestone:** M0.2 – Technical Skeleton
 - **Last updated:** 2026-10-01
 - **Updated by:** Claude Code (M0.2 implementation session)
 
@@ -15,8 +15,8 @@
 | Milestone | Status | Verification |
 |---|---|---|
 | M0.1 – Project Preparation | done | planning/repository baseline prepared; repository sanity assets included |
-| M0.2 – Technical Skeleton | verified | install/enable/uninstall, method selectable, form + validation + save/reload, stub invocation (exit 2) verified manually on a Checkmk 2.5 site (Python 3.13); `NOTIFY_PARAMETER_*` value dump deferred to M2 |
-| M1 – Notification Core | not started | not yet implemented |
+| M0.2 – Technical Skeleton | done | install/enable/uninstall, method selectable, form + validation + save/reload, stub invocation (exit 2) verified manually on a Checkmk 2.5 site (Python 3.13); `NOTIFY_PARAMETER_*` value dump deferred to M2 |
+| M1 – Notification Core | implemented, not verified | 47 unit tests incl. mock HTTP server pass; no run against real Apprise/Checkmk yet |
 | M2 – Native Checkmk UX | not started | not yet implemented |
 | M3 – Routing & Formatting | not started | not yet implemented |
 | M4 – Hardening | not started | not yet implemented |
@@ -24,7 +24,7 @@
 
 ## Current objective
 
-Implement M0.2 according to `CODINGAGENT_TASK.md` and `docs/DEVELOPMENT_PLAN.md` without prematurely implementing later milestones.
+Verify M1 end-to-end against a real Apprise API and Checkmk 2.5, then continue with M2 (native UX, credentials) without prematurely implementing later milestones.
 
 ## Completed / verified
 
@@ -40,7 +40,13 @@ Implement M0.2 according to `CODINGAGENT_TASK.md` and `docs/DEVELOPMENT_PLAN.md`
 
 ## In progress
 
-M0.2 verified (see log). Open carry-over: record real `NOTIFY_PARAMETER_*` names/value formats (bool/int/empty tag) in M2. M1 not started.
+M1 code complete locally. Open items:
+- end-to-end run against a real Apprise API (maintainer is arranging an instance);
+- record real `NOTIFY_PARAMETER_*` value formats (bool/int/empty tag); the parser currently accepts true/false/1/0/yes/no/on/off and `True`/`False`;
+- M3 will refine message layout (markdown escaping, URLs); M1 uses the plain TECHNICAL_SPEC layout for all formats;
+- M2: authentication and password-store handling are not implemented (Apprise access mode still to be verified);
+- HTTP classification is provisional until M4 (table in `docs/TECHNICAL_SPEC.md`); 424 is treated as temporary, redirects as permanent;
+- flapping stop/disabled map to `info` (decision recorded in code and tests).
 
 ## Blockers
 
@@ -74,11 +80,15 @@ Record only commands that were actually executed. Replace/add rows as work progr
 | 2026-10-01 | `python scripts/build_mkp.py` | passed | apprise-0.1.0.mkp, reproducible (tested) |
 | 2026-10-01 | manual: mkp add/enable, method selectable, form, validation, save/reload, mkp remove | passed | after fixes for script title line and `Message` validator crash; Checkmk 2.5 test site `dev` |
 | 2026-10-01 | manual: test notification (host, recipient cmkadmin) | passed | stub output shown, exit 2, no traceback |
-| - | `NOTIFY_PARAMETER_*` dump | not run | needs Apprise-independent temporary dump; moved to M2 |
+| - | `NOTIFY_PARAMETER_*` dump | not run | moved to M2 |
+| 2026-10-01 | `python -m unittest discover -s tests/unit` | passed (47 tests) | M1 core incl. mock server transport tests |
+| 2026-10-01 | `python -m ruff check .` / `ruff format` | passed | |
+| 2026-10-01 | `python scripts/build_mkp.py` | passed | apprise-0.2.0.mkp |
 
 ## Next concrete actions
 
-1. Start M1 (notification core) per `CODINGAGENT_TASK.md`.
+1. Run the packaged M1 build (0.2.0) on the Checkmk test site against an Apprise API; fix findings; mark M1 `verified`.
+2. Then M2 (notification core) per `CODINGAGENT_TASK.md`.
 
 ## Handoff notes
 
