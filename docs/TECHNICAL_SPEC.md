@@ -120,6 +120,18 @@ These semantics are normative:
 
 The exact HTTP classification matrix is finalized in M4. Avoid treating every non-2xx response identically.
 
+Implemented in M1 (provisional until M4; `classify_status` in the script):
+
+| Outcome | Exit | Reason |
+|---|---:|---|
+| 2xx | 0 | accepted |
+| 408, 429, 5xx | 1 | transient / rate limit / server side |
+| 424 | 1 | Apprise accepted the request but a downstream provider failed; may be transient |
+| timeout, DNS failure, connection error, TLS error | 1 | do not lose the alert; the problem is usually fixable outside the notification |
+| other 3xx | 2 | redirects are deliberately not followed |
+| 400, 401, 403, 404, 406, 409, 431 and other 4xx | 2 | request/configuration problem, retrying cannot help |
+| invalid local configuration or Checkmk event | 2 | nothing to retry |
+
 ## Proposed state/event → Apprise type mapping
 
 | Condition | Type |

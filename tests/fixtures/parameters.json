@@ -1,0 +1,7 @@
+{
+  "NOTIFY_PARAMETER_BASE_URL": "https://apprise.example.net",
+  "NOTIFY_PARAMETER_CONFIG_ID": "checkmk",
+  "NOTIFY_PARAMETER_MESSAGE_FORMAT": "markdown",
+  "NOTIFY_PARAMETER_TIMEOUT": "10",
+  "NOTIFY_PARAMETER_VERIFY_TLS": "True"
+}

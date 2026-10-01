@@ -13,6 +13,7 @@ The project follows Semantic Versioning once release artifacts begin.
 - GitHub governance baseline
 - coding-agent assignment
 - M0.2 technical skeleton: `apprise` notification stub, `NotificationParameters` form (Ruleset API v1), reproducible stdlib MKP builder (`scripts/build_mkp.py`), unit tests, lint/test CI workflow and install smoke-test checklist
+- M1 notification core: `NOTIFY_*` parsing and validation, event/state to Apprise type mapping, deterministic host/service title and body, JSON payload, bounded stdlib HTTP client (no redirects, TLS verification on by default), HTTP/network failure classification to Checkmk exit codes 0/1/2, 47 unit tests with a local mock server
 
 ### Changed
 

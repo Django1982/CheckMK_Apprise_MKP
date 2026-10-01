@@ -1,0 +1,9 @@
+{
+  "NOTIFY_HOSTADDRESS": "10.10.1.1",
+  "NOTIFY_HOSTNAME": "router01.example.net",
+  "NOTIFY_HOSTOUTPUT": "Packet loss: 0%",
+  "NOTIFY_HOSTSTATE": "UP",
+  "NOTIFY_NOTIFICATIONTYPE": "RECOVERY",
+  "NOTIFY_OMD_SITE": "prod",
+  "NOTIFY_WHAT": "HOST"
+}
