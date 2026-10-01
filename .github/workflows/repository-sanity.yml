@@ -1,0 +1,56 @@
+name: Repository sanity
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  repository-sanity:
+    name: repository-sanity
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Validate required project files
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in \
+            README.md \
+            AGENTS.md \
+            CODINGAGENT_TASK.md \
+            PROJECT_STATUS.md \
+            LICENSE \
+            CONTRIBUTING.md \
+            SECURITY.md \
+            docs/ARCHITECTURE.md \
+            docs/DEVELOPMENT_PLAN.md \
+            docs/TECHNICAL_SPEC.md \
+            docs/GITHUB_GOVERNANCE.md \
+            docs/LICENSING.md; do
+            test -s "$file" || { echo "Missing/empty required file: $file"; exit 1; }
+          done
+
+      - name: Validate skeleton directories
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -d src/local/share/check_mk/notifications
+          test -d src/local/lib/python3/cmk_addons/plugins/apprise/rulesets
+          test -d tests/unit
+          test -d tests/fixtures
+
+      - name: Reject obvious private-key material
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -RIl --exclude-dir=.git -E 'BEGIN (RSA |EC |OPENSSH |DSA )?PRIVATE KEY' . | grep -q .; then
+            echo "Private-key-looking material detected in repository"
+            exit 1
+          fi

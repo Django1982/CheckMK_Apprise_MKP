@@ -1,0 +1,45 @@
+name: Bug report
+description: Report reproducible incorrect behavior
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include real passwords, tokens, authorization headers or secret-bearing Apprise URLs.
+  - type: input
+    id: checkmk_version
+    attributes:
+      label: Checkmk version
+      placeholder: "2.5.0pXX"
+    validations:
+      required: true
+  - type: input
+    id: apprise_version
+    attributes:
+      label: Apprise API version/image
+      placeholder: "version or container tag"
+    validations:
+      required: false
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What happened and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction steps
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Sanitized logs
+      description: Remove credentials, tokens, internal identifiers and sensitive host data.
+      render: text
+    validations:
+      required: false

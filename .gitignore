@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
+*~
+
+# Build / package artifacts
+build/
+dist/
+artifacts/
+*.mkp
+*.tar.gz
+*.zip
+
+# Local test/config data
+.env
+.env.*
+!.env.example
+.local/
