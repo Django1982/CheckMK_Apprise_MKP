@@ -74,6 +74,22 @@ class RulesetWiringTest(unittest.TestCase):
             self.assertEqual(len(call.args), 2)
             self.assertEqual(getattr(call.args[1].func, "id", ""), "Message")
 
+    def test_password_uses_password_store_capable_formspec(self):
+        # Parameter keys reach the script as NOTIFY_PARAMETER_<KEY>; the script relies on these.
+        source = RULESET.read_text(encoding="utf-8")
+        for key in (
+            "base_url",
+            "config_id",
+            "tag",
+            "username",
+            "password",
+            "message_format",
+            "verify_tls",
+            "timeout",
+        ):
+            self.assertIn(f'"{key}": DictElement(', source)
+        self.assertIn("parameter_form=Password(", source)
+
     def test_no_legacy_registry(self):
         self.assertNotIn("notification_parameter_registry", RULESET.read_text(encoding="utf-8"))
 

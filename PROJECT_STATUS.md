@@ -4,8 +4,8 @@
 
 ## Current state
 
-- **Active milestone:** M1 – Notification Core (branch `feat/notification-core`)
-- **Overall status:** M0.2 done (merged, PR #3); M1 implemented, not verified end-to-end (unit tests only, no Apprise server yet)
+- **Active milestone:** M2 – Native Checkmk UX (branch `feat/authentication`)
+- **Overall status:** M0.2 done (merged, PR #3); M1 verified against a mock (PR #4 merged); M2 authentication implemented, not verified
 - **Last verified milestone:** M0.2 – Technical Skeleton
 - **Last updated:** 2026-10-01
 - **Updated by:** Claude Code (M0.2 implementation session)
@@ -16,8 +16,8 @@
 |---|---|---|
 | M0.1 – Project Preparation | done | planning/repository baseline prepared; repository sanity assets included |
 | M0.2 – Technical Skeleton | done | install/enable/uninstall, method selectable, form + validation + save/reload, stub invocation (exit 2) verified manually on a Checkmk 2.5 site (Python 3.13); `NOTIFY_PARAMETER_*` value dump deferred to M2 |
-| M1 – Notification Core | verified (mock) | 48 unit tests + manual Checkmk runs against the mock for main events, failure paths, Unicode and log inspection; open: ack/downtime-end/custom/flapping-stop/host-UP manual runs (unit-tested only), HTTPS/TLS manual test (maintainer tests separately), real Apprise API |
-| M2 – Native Checkmk UX | not started | not yet implemented |
+| M1 – Notification Core | done (mock-verified; merged in PR #4) | 48 unit tests + manual Checkmk runs against the mock for main events, failure paths, Unicode and log inspection; open: ack/downtime-end/custom/flapping-stop/host-UP manual runs (unit-tested only), HTTPS/TLS manual test (maintainer tests separately), real Apprise API |
+| M2 – Native Checkmk UX | in progress | username/password (Password form spec, password store lookup) implemented with unit tests; not yet run on a Checkmk site; remaining: verify password-store runtime, GUI secrecy, remaining form polish |
 | M3 – Routing & Formatting | not started | not yet implemented |
 | M4 – Hardening | not started | not yet implemented |
 | M5 – Release Readiness | not started | not yet implemented |
@@ -49,6 +49,8 @@ M1 code complete locally. Open items:
 - flapping stop/disabled map to `info` (decision recorded in code and tests).
 
 ## Blockers
+
+- **Maintainer decision needed (M2):** resolving stored passwords imports `cmk.utils.password_store.extract`, which is not a documented public API (rule 3 in `AGENTS.md`). See `docs/TECHNICAL_SPEC.md`, "Credentials". Recommendation: approve, because Checkmk's bundled plugins do the same and no public alternative was found.
 
 None. Notes:
 
@@ -84,6 +86,7 @@ Record only commands that were actually executed. Replace/add rows as work progr
 | 2026-10-01 | manual M1 against `scripts/mock_apprise.py` via Checkmk (v0.2.0): host DOWN, downtime start, service WARN/CRIT/UNKNOWN, real RECOVERY (fake check result), flapping start, empty tag, plug-in output | passed | titles, Apprise `type`, `format`, tag omitted when empty all as specified; boolean/integer parameters accepted by the parser; a transient failure was shown by Checkmk as temporary (exit 1) |
 | 2026-10-01 | manual M1 failure paths via Checkmk against mock: timeout, HTTP 503, connection refused (all exit 1, Checkmk retries), HTTP 400 (exit 2, no retry); Unicode plug-in output; `notify.log` inspected | passed | log contains only parameter names, no URL/config id/secret |
 | 2026-10-01 | `python -m unittest discover -s tests/unit` | passed (48 tests) | M1 core incl. mock server transport tests |
+| 2026-10-01 | `python -m unittest discover -s tests/unit` (M2 branch) | passed (59 tests) | adds authentication tests with a fake password store |
 | 2026-10-01 | `python -m ruff check .` / `ruff format` | passed | |
 | 2026-10-01 | `python scripts/build_mkp.py` | passed | apprise-0.2.0.mkp |
 

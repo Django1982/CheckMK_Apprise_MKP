@@ -7,6 +7,8 @@ script name (``~/local/share/check_mk/notifications/apprise``). Each dictionary
 key below reaches the script as ``NOTIFY_PARAMETER_<UPPERCASE_KEY>``.
 """
 
+from collections.abc import Mapping
+
 from cmk.rulesets.v1 import Help, Message, Title
 from cmk.rulesets.v1.form_specs import (
     BooleanChoice,
@@ -14,12 +16,18 @@ from cmk.rulesets.v1.form_specs import (
     DictElement,
     Dictionary,
     Integer,
+    Password,
     SingleChoice,
     SingleChoiceElement,
     String,
 )
-from cmk.rulesets.v1.form_specs.validators import MatchRegex, NumberInRange
+from cmk.rulesets.v1.form_specs.validators import MatchRegex, NumberInRange, ValidationError
 from cmk.rulesets.v1.rule_specs import NotificationParameters, Topic
+
+
+def _validate_credentials(value: Mapping[str, object]) -> None:
+    if ("username" in value) != ("password" in value):
+        raise ValidationError(Message("Set the username and the password together, or neither."))
 
 
 def _parameter_form() -> Dictionary:
@@ -30,6 +38,7 @@ def _parameter_form() -> Dictionary:
             "configuration (POST /notify/{config_id}). Downstream providers "
             "are configured in Apprise, not in Checkmk."
         ),
+        custom_validate=(_validate_credentials,),
         elements={
             "base_url": DictElement(
                 required=True,
@@ -65,9 +74,30 @@ def _parameter_form() -> Dictionary:
                 parameter_form=String(
                     title=Title("Routing tag expression"),
                     help_text=Help(
-                        "Optional Apprise tag expression passed through unchanged. "
-                        "Omitted from the request when empty."
+                        "Optional Apprise tag expression passed through unchanged, omitted "
+                        "when empty. Apprise configurations in access mode 'locked' or "
+                        "'public' require a specific tag; 'all' is rejected."
                     ),
+                ),
+            ),
+            "username": DictElement(
+                required=False,
+                parameter_form=String(
+                    title=Title("Apprise username"),
+                    help_text=Help(
+                        "HTTP Basic authentication user of the Apprise configuration "
+                        "(access mode 'user' or 'locked'). Leave unset for 'public' access."
+                    ),
+                    custom_validate=(
+                        MatchRegex(r"^[^:\s]+$", Message("Must not contain a colon or spaces.")),
+                    ),
+                ),
+            ),
+            "password": DictElement(
+                required=False,
+                parameter_form=Password(
+                    title=Title("Apprise password"),
+                    help_text=Help("Prefer a password from the Checkmk password store."),
                 ),
             ),
             "message_format": DictElement(

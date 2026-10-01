@@ -1,18 +1,22 @@
 # SPDX-License-Identifier: GPL-2.0-only
 """M1 notification core tests. No real Checkmk or Apprise server is required."""
 
+import base64
 import importlib.machinery
 import importlib.util
 import io
 import json
 import socket
 import ssl
+import sys
 import threading
+import types
 import unittest
 from contextlib import redirect_stdout
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from time import sleep
+from unittest import mock
 
 REPO = Path(__file__).resolve().parents[2]
 SCRIPT = REPO / "src/local/share/check_mk/notifications/apprise"
@@ -161,6 +165,129 @@ class ConfigParsingTest(unittest.TestCase):
         with self.assertRaises(apprise.ConfigError) as ctx:
             apprise.parse_config(parameters(base_url="https://user:topsecret@h.example"))
         self.assertNotIn("topsecret", str(ctx.exception))
+
+
+def explicit_password(value: str, password_id: str = "pw1") -> dict[str, str]:
+    """Environment as Checkmk flattens ("cmk_postprocessed", "explicit_password", (id, value))."""
+    return {
+        "NOTIFY_PARAMETER_PASSWORD_1": "cmk_postprocessed",
+        "NOTIFY_PARAMETER_PASSWORD_2": "explicit_password",
+        "NOTIFY_PARAMETER_PASSWORD_3": f"{password_id}	{value}",
+        "NOTIFY_PARAMETER_PASSWORD_3_1": password_id,
+        "NOTIFY_PARAMETER_PASSWORD_3_2": value,
+    }
+
+
+def stored_password(store_id: str) -> dict[str, str]:
+    return {
+        "NOTIFY_PARAMETER_PASSWORD_1": "cmk_postprocessed",
+        "NOTIFY_PARAMETER_PASSWORD_2": "stored_password",
+        "NOTIFY_PARAMETER_PASSWORD_3": f"{store_id}	",
+        "NOTIFY_PARAMETER_PASSWORD_3_1": store_id,
+        "NOTIFY_PARAMETER_PASSWORD_3_2": "",
+    }
+
+
+def fake_password_store(extract):
+    """Install a fake cmk.utils.password_store so no Checkmk is needed."""
+    modules = {}
+    for name in ("cmk", "cmk.utils", "cmk.utils.password_store"):
+        modules[name] = types.ModuleType(name)
+    modules["cmk.utils.password_store"].extract = extract
+    modules["cmk"].utils = modules["cmk.utils"]
+    modules["cmk.utils"].password_store = modules["cmk.utils.password_store"]
+    return mock.patch.dict(sys.modules, modules)
+
+
+class AuthenticationTest(unittest.TestCase):
+    def test_no_credentials_by_default(self):
+        config = apprise.parse_config(parameters())
+        self.assertEqual((config.username, config.password), ("", ""))
+
+    def test_explicit_password(self):
+        env = {**parameters(username="alice"), **explicit_password("s3cr3t")}
+        config = apprise.parse_config(env)
+        self.assertEqual((config.username, config.password), ("alice", "s3cr3t"))
+
+    def test_stored_password_is_resolved_via_password_store(self):
+        seen = []
+
+        def extract(store_id):
+            seen.append(store_id)
+            return "from-store"
+
+        env = {**parameters(username="alice"), **stored_password("my_store_id")}
+        with fake_password_store(extract):
+            config = apprise.parse_config(env)
+        self.assertEqual(seen, ["my_store_id"])
+        self.assertEqual(config.password, "from-store")
+
+    def test_stored_password_lookup_failure_is_permanent_and_silent(self):
+        def extract(store_id):
+            raise RuntimeError("leaky detail: /omd/sites/x/secret-path")
+
+        env = {
+            **fixture("service_critical"),
+            **parameters(username="alice"),
+            **stored_password("my_store_id"),
+        }
+        with fake_password_store(extract):
+            code, out = run_main(env)
+        self.assertEqual(code, 2)
+        self.assertIn("password store", out)
+        self.assertNotIn("leaky detail", out)
+
+    def test_stored_password_without_checkmk_is_config_error(self):
+        env = {**parameters(username="alice"), **stored_password("my_store_id")}
+        with mock.patch.dict(
+            sys.modules, {"cmk": None, "cmk.utils": None, "cmk.utils.password_store": None}
+        ):
+            with self.assertRaises(apprise.ConfigError):
+                apprise.parse_config(env)
+
+    def test_username_and_password_must_be_set_together(self):
+        with self.assertRaises(apprise.ConfigError):
+            apprise.parse_config(parameters(username="alice"))
+        with self.assertRaises(apprise.ConfigError):
+            apprise.parse_config({**parameters(), **explicit_password("x")})
+
+    def test_username_with_colon_is_rejected(self):
+        env = {**parameters(username="al:ice"), **explicit_password("x")}
+        with self.assertRaises(apprise.ConfigError):
+            apprise.parse_config(env)
+
+    def test_password_is_not_in_repr(self):
+        config = apprise.parse_config(
+            {**parameters(username="alice"), **explicit_password("s3cr3t")}
+        )
+        self.assertNotIn("s3cr3t", repr(config))
+
+    def test_basic_authorization_header_is_sent(self):
+        with MockApprise(200) as server:
+            env = {
+                **fixture("service_critical"),
+                **parameters(base_url=server.url, username="alice"),
+                **explicit_password("p@ss:wörd"),
+            }
+            code, out = run_main(env)
+        self.assertEqual(code, 0)
+        expected = "Basic " + base64.b64encode("alice:p@ss:wörd".encode()).decode()
+        self.assertEqual(server.requests[0]["headers"]["Authorization"], expected)
+        self.assertIn("unencrypted HTTP", out)
+        self.assertNotIn("p@ss", out)
+
+    def test_401_is_permanent_and_never_prints_credentials(self):
+        with MockApprise(401) as server:
+            env = {
+                **fixture("service_critical"),
+                **parameters(base_url=server.url, username="alice"),
+                **explicit_password("topsecret"),
+            }
+            code, out = run_main(env)
+        self.assertEqual(code, 2)
+        self.assertIn("check credentials", out)
+        for forbidden in ("topsecret", "alice"):
+            self.assertNotIn(forbidden, out)
 
 
 class EventParsingTest(unittest.TestCase):
