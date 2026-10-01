@@ -78,7 +78,11 @@ def main() -> int:
     parser.add_argument("--tls-key")
     args = parser.parse_args()
 
-    server = ThreadingHTTPServer((args.host, args.port), make_handler(args))
+    class QuietServer(ThreadingHTTPServer):
+        def handle_error(self, request, client_address):
+            pass  # clients that hit their timeout abort the connection on purpose
+
+    server = QuietServer((args.host, args.port), make_handler(args))
     scheme = "http"
     if args.tls_cert:
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)

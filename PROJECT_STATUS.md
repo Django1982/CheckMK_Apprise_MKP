@@ -16,7 +16,7 @@
 |---|---|---|
 | M0.1 – Project Preparation | done | planning/repository baseline prepared; repository sanity assets included |
 | M0.2 – Technical Skeleton | done | install/enable/uninstall, method selectable, form + validation + save/reload, stub invocation (exit 2) verified manually on a Checkmk 2.5 site (Python 3.13); `NOTIFY_PARAMETER_*` value dump deferred to M2 |
-| M1 – Notification Core | implemented, partly verified | 48 unit tests pass; manual runs through Checkmk against the mock server pass for the main event types; failure paths, ack/downtime-end/custom/flapping-stop, HTTPS and log-secret checks still open; no real Apprise yet |
+| M1 – Notification Core | verified (mock) | 48 unit tests + manual Checkmk runs against the mock for main events, failure paths, Unicode and log inspection; open: ack/downtime-end/custom/flapping-stop/host-UP manual runs (unit-tested only), HTTPS/TLS manual test (maintainer tests separately), real Apprise API |
 | M2 – Native Checkmk UX | not started | not yet implemented |
 | M3 – Routing & Formatting | not started | not yet implemented |
 | M4 – Hardening | not started | not yet implemented |
@@ -82,6 +82,7 @@ Record only commands that were actually executed. Replace/add rows as work progr
 | 2026-10-01 | manual: test notification (host, recipient cmkadmin) | passed | stub output shown, exit 2, no traceback |
 | - | `NOTIFY_PARAMETER_*` dump | not run | moved to M2 |
 | 2026-10-01 | manual M1 against `scripts/mock_apprise.py` via Checkmk (v0.2.0): host DOWN, downtime start, service WARN/CRIT/UNKNOWN, real RECOVERY (fake check result), flapping start, empty tag, plug-in output | passed | titles, Apprise `type`, `format`, tag omitted when empty all as specified; boolean/integer parameters accepted by the parser; a transient failure was shown by Checkmk as temporary (exit 1) |
+| 2026-10-01 | manual M1 failure paths via Checkmk against mock: timeout, HTTP 503, connection refused (all exit 1, Checkmk retries), HTTP 400 (exit 2, no retry); Unicode plug-in output; `notify.log` inspected | passed | log contains only parameter names, no URL/config id/secret |
 | 2026-10-01 | `python -m unittest discover -s tests/unit` | passed (48 tests) | M1 core incl. mock server transport tests |
 | 2026-10-01 | `python -m ruff check .` / `ruff format` | passed | |
 | 2026-10-01 | `python scripts/build_mkp.py` | passed | apprise-0.2.0.mkp |
