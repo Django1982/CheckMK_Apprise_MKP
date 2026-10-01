@@ -32,7 +32,7 @@ Finish M4: land the classification fixes, then document timeouts/limits and exte
 |---|---|
 | HTTP 204 treated as success (P0) | Fixed: only 200 is delivered; every other 2xx is exit 2. Current Apprise API answers 404 for an empty configuration; older versions answered 204 |
 | 424 ambiguous (P1) | Kept as exit 1, documented as a deliberate trade-off with troubleshooting hint |
-| TLS certificate failure retryable (P1) | Kept as exit 1 deliberately (alerts should not be lost while an admin fixes the certificate); message now says what to check. Open for maintainer decision: switch to exit 2 |
+| TLS certificate failure retryable (P1) | Kept as exit 1 deliberately (alerts should not be lost while an admin fixes the certificate); message now says what to check. Maintainer confirmed exit 1 for now; re-evaluate after the real HTTPS test |
 | Missing `NOTIFICATIONTYPE` defaulted to PROBLEM (P1) | Fixed: invalid event, exit 2 |
 | Implicit environment proxies (P2) | Decided: ignored, documented, test proves it |
 | TLS-disabled warning on `http://` (P2) | Fixed: only for `https://` |
@@ -45,7 +45,7 @@ Finish M4: land the classification fixes, then document timeouts/limits and exte
 - Real Apprise API (maintainer tests at home): `locked` mode with Basic auth and tag, HTTPS with a real certificate, how Markdown renders on a real target.
 - M1 manual events listed above.
 - Documentation (M5): configure exactly one recipient in the Checkmk rule; "all contacts" calls the script once per contact and would send duplicates. Repeated 424 means: check routing tags and the Apprise configuration.
-- Maintainer decision: TLS certificate verification failure exit code (1 now).
+- TLS certificate verification failure stays exit 1 (maintainer decision 2026-10-01, to be re-evaluated after the HTTPS test against the maintainer's real Apprise instance).
 
 ## Blockers
 
