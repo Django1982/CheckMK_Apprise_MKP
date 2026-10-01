@@ -12,6 +12,7 @@ The project follows Semantic Versioning once release artifacts begin.
 - initial architecture and technical specification
 - GitHub governance baseline
 - coding-agent assignment
+- M0.2 technical skeleton: `apprise` notification stub, `NotificationParameters` form (Ruleset API v1), reproducible stdlib MKP builder (`scripts/build_mkp.py`), unit tests, lint/test CI workflow and install smoke-test checklist
 
 ### Changed
 

@@ -5,17 +5,17 @@
 ## Current state
 
 - **Active milestone:** M0.2 – Technical Skeleton
-- **Overall status:** not started
+- **Overall status:** M0.2 verified on a Checkmk 2.5 test site; M1 not started
 - **Last verified milestone:** M0.1 – Project Preparation
 - **Last updated:** 2026-10-01
-- **Updated by:** project planning handoff
+- **Updated by:** Claude Code (M0.2 implementation session)
 
 ## Milestone overview
 
 | Milestone | Status | Verification |
 |---|---|---|
 | M0.1 – Project Preparation | done | planning/repository baseline prepared; repository sanity assets included |
-| M0.2 – Technical Skeleton | not started | not yet implemented |
+| M0.2 – Technical Skeleton | verified | install/enable/uninstall, method selectable, form + validation + save/reload, stub invocation (exit 2) verified manually on a Checkmk 2.5 site (Python 3.13); `NOTIFY_PARAMETER_*` value dump deferred to M2 |
 | M1 – Notification Core | not started | not yet implemented |
 | M2 – Native Checkmk UX | not started | not yet implemented |
 | M3 – Routing & Formatting | not started | not yet implemented |
@@ -40,11 +40,16 @@ Implement M0.2 according to `CODINGAGENT_TASK.md` and `docs/DEVELOPMENT_PLAN.md`
 
 ## In progress
 
-None. The next coding agent should mark M0.2 `in progress` when implementation actually begins.
+M0.2 verified (see log). Open carry-over: record real `NOTIFY_PARAMETER_*` names/value formats (bool/int/empty tag) in M2. M1 not started.
 
 ## Blockers
 
-None known at handoff time.
+None. Notes:
+
+- The site runs Python 3.13 (Checkmk 2.5); `pyproject.toml` still targets py312, harmless.
+- Lessons: notification script line 2 must be `# <title>` (Checkmk dropdown name); `MatchRegex` error messages must be `Message(...)`, not `str`.
+- Documentation TODO (M5): configure exactly one recipient in the Checkmk rule; "all contacts" calls the script once per contact and would send duplicates to Apprise.
+- The stub exits 2 on purpose so it is not mistaken for working delivery.
 
 ## Decisions that must be preserved
 
@@ -64,23 +69,16 @@ Record only commands that were actually executed. Replace/add rows as work progr
 | Date | Command / check | Result | Notes |
 |---|---|---|---|
 | 2026-10-01 | planning handoff/package preparation | passed | no Checkmk implementation exists yet |
-
-## Files / areas currently expected to change next
-
-- `src/local/share/check_mk/notifications/apprise`
-- `src/local/lib/python3/cmk_addons/plugins/apprise/rulesets/notification.py`
-- MKP packaging/build metadata or scripts
-- smoke-test/install documentation
-- tests required for M0.2 baseline behavior
+| 2026-10-01 | `python -m unittest discover -s tests/unit -v` | passed (6 tests) | Python 3.10 locally; CI uses 3.12 |
+| 2026-10-01 | `python -m ruff check .` | passed | ruff 0.16.9 |
+| 2026-10-01 | `python scripts/build_mkp.py` | passed | apprise-0.1.0.mkp, reproducible (tested) |
+| 2026-10-01 | manual: mkp add/enable, method selectable, form, validation, save/reload, mkp remove | passed | after fixes for script title line and `Message` validator crash; Checkmk 2.5 test site `dev` |
+| 2026-10-01 | manual: test notification (host, recipient cmkadmin) | passed | stub output shown, exit 2, no traceback |
+| - | `NOTIFY_PARAMETER_*` dump | not run | needs Apprise-independent temporary dump; moved to M2 |
 
 ## Next concrete actions
 
-1. Read `CODINGAGENT_TASK.md` and all mandatory documents in its stated order.
-2. Reconcile this status with the actual repository tree.
-3. Mark M0.2 `in progress` here.
-4. Implement only the M0.2 Technical Skeleton scope first.
-5. Run and record repository checks plus any new M0.2 tests/smoke checks.
-6. Update this file before ending the session, including failures or incomplete work.
+1. Start M1 (notification core) per `CODINGAGENT_TASK.md`.
 
 ## Handoff notes
 
