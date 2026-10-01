@@ -1,0 +1,115 @@
+# SPDX-License-Identifier: GPL-2.0-only
+"""M0.2 skeleton tests: stub behaviour, ruleset wiring and reproducible MKP."""
+
+import ast
+import gzip
+import importlib.machinery
+import importlib.util
+import io
+import json
+import os
+import subprocess
+import sys
+import tarfile
+import unittest
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parents[2]
+SCRIPT = REPO / "src/local/share/check_mk/notifications/apprise"
+RULESET = REPO / "src/local/lib/python3/cmk_addons/plugins/apprise/rulesets/notification.py"
+
+
+def _load_script():
+    loader = importlib.machinery.SourceFileLoader("apprise_script", str(SCRIPT))
+    spec = importlib.util.spec_from_loader("apprise_script", loader)
+    module = importlib.util.module_from_spec(spec)
+    loader.exec_module(module)
+    return module
+
+
+def _load_builder():
+    spec = importlib.util.spec_from_file_location("build_mkp", REPO / "scripts/build_mkp.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class NotificationStubTest(unittest.TestCase):
+    def test_missing_parameters_is_permanent_failure(self):
+        script = _load_script()
+        self.assertEqual(script.main({}), script.EXIT_PERMANENT)
+
+    def test_missing_parameters_are_listed(self):
+        script = _load_script()
+        self.assertEqual(
+            script.missing_parameters({"NOTIFY_PARAMETER_BASE_URL": "https://a.example"}),
+            ["CONFIG_ID"],
+        )
+
+    def test_stub_runs_without_traceback_and_without_secrets(self):
+        env = {
+            **os.environ,
+            "NOTIFY_PARAMETER_BASE_URL": "https://apprise.example.net",
+            "NOTIFY_PARAMETER_CONFIG_ID": "checkmk",
+            "NOTIFY_PARAMETER_PASSWORD": "s3cret-value",
+        }
+        proc = subprocess.run(
+            [sys.executable, str(SCRIPT)], env=env, capture_output=True, text=True, timeout=30
+        )
+        self.assertEqual(proc.returncode, 2)
+        self.assertNotIn("Traceback", proc.stderr)
+        self.assertNotIn("s3cret-value", proc.stdout + proc.stderr)
+
+
+class RulesetWiringTest(unittest.TestCase):
+    """cmk is not installable here, so the ruleset is checked statically."""
+
+    def setUp(self):
+        self.tree = ast.parse(RULESET.read_text(encoding="utf-8"))
+
+    def test_rule_spec_named_apprise(self):
+        found = {}
+        for node in self.tree.body:
+            if isinstance(node, ast.Assign) and isinstance(node.value, ast.Call):
+                target = node.targets[0].id
+                kwargs = {k.arg: k.value for k in node.value.keywords}
+                if getattr(node.value.func, "id", "") == "NotificationParameters":
+                    found[target] = kwargs
+        self.assertEqual(len(found), 1)
+        (variable, kwargs), = found.items()
+        self.assertTrue(variable.startswith("rule_spec_"))
+        self.assertEqual(kwargs["name"].value, SCRIPT.name)
+
+    def test_no_legacy_registry(self):
+        self.assertNotIn("notification_parameter_registry", RULESET.read_text(encoding="utf-8"))
+
+
+class MkpBuildTest(unittest.TestCase):
+    def test_build_is_reproducible_and_contains_expected_parts(self):
+        builder = _load_builder()
+        name, first = builder.build_mkp()
+        _, second = builder.build_mkp()
+        self.assertEqual(first, second)
+        self.assertEqual(name, f"apprise-{builder.PACKAGE_VERSION}.mkp")
+
+        outer = tarfile.open(fileobj=io.BytesIO(gzip.decompress(first)))
+        self.assertEqual(
+            sorted(outer.getnames()),
+            ["cmk_addons_plugins.tar", "info", "info.json", "notifications.tar"],
+        )
+        manifest = json.load(outer.extractfile("info.json"))
+        self.assertEqual(
+            manifest["files"],
+            {
+                "notifications": ["apprise"],
+                "cmk_addons_plugins": ["apprise/rulesets/notification.py"],
+            },
+        )
+        self.assertEqual(ast.literal_eval(outer.extractfile("info").read().decode()), manifest)
+
+        inner = tarfile.open(fileobj=io.BytesIO(outer.extractfile("notifications.tar").read()))
+        self.assertEqual(inner.getmember("apprise").mode, 0o755)
+
+
+if __name__ == "__main__":
+    unittest.main()

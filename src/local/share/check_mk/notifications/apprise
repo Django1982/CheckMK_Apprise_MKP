@@ -1,0 +1,41 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-2.0-only
+"""Checkmk notification script ``apprise`` -- M0.2 skeleton stub.
+
+Delivery to the Apprise API is NOT implemented yet (milestone M1). The stub only
+checks that Checkmk handed over the expected parameters, prints a short and
+secret-free message and exits with 2 (permanent failure) so that no one mistakes
+it for a working delivery.
+
+Exit codes follow Checkmk: 0 sent, 1 retry later, 2 do not retry.
+"""
+
+import os
+import sys
+
+EXIT_OK = 0
+EXIT_TEMPORARY = 1
+EXIT_PERMANENT = 2
+
+REQUIRED_PARAMETERS = ("BASE_URL", "CONFIG_ID")
+
+
+def missing_parameters(env: dict[str, str]) -> list[str]:
+    return [
+        name
+        for name in REQUIRED_PARAMETERS
+        if not env.get(f"NOTIFY_PARAMETER_{name}", "").strip()
+    ]
+
+
+def main(env: dict[str, str]) -> int:
+    missing = missing_parameters(env)
+    if missing:
+        print("Apprise configuration invalid: missing " + ", ".join(missing))
+        return EXIT_PERMANENT
+    print("Apprise notification not sent: delivery is not implemented in this skeleton version")
+    return EXIT_PERMANENT
+
+
+if __name__ == "__main__":
+    sys.exit(main(dict(os.environ)))
