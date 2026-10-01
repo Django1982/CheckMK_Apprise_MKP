@@ -27,6 +27,16 @@ TYPES = ("info", "success", "warning", "failure")
 FORMATS = ("text", "markdown", "html", "", None)
 
 
+def describe_auth(header: str) -> str:
+    """Show received Basic credentials; fine here because this mock only sees test values."""
+    if not header.startswith("Basic "):
+        return "no Basic credentials"
+    try:
+        return "user:password = " + base64.b64decode(header[6:]).decode("utf-8", "replace")
+    except ValueError:
+        return "malformed credentials"
+
+
 def make_handler(args: argparse.Namespace) -> type[BaseHTTPRequestHandler]:
     expected_auth = ""
     if args.user:
@@ -58,8 +68,15 @@ def make_handler(args: argparse.Namespace) -> type[BaseHTTPRequestHandler]:
             print("body:\n" + str(payload.get("body")), flush=True)
 
             time.sleep(args.delay)
-            if args.user and self.headers.get("Authorization") != expected_auth:
-                return self._reply(401, "authentication required")
+            if args.user:
+                got = self.headers.get("Authorization", "")
+                ok = got == expected_auth
+                print(
+                    f"auth: {'OK' if ok else 'REJECTED'} (received {describe_auth(got)})",
+                    flush=True,
+                )
+                if not ok:
+                    return self._reply(401, "authentication required")
             if args.status:
                 return self._reply(args.status, "forced status")
             prefix, _, key = self.path.partition("/notify/")
