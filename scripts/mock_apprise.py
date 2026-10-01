@@ -8,6 +8,7 @@ force failure modes without restarting Checkmk::
 
     python3 mock_apprise.py --port 8000                      # happy path
     python3 mock_apprise.py --port 8000 --status 503         # always answer 503
+    python3 mock_apprise.py --port 8000 --user alice --password test  # require Basic auth
     python3 mock_apprise.py --port 8000 --delay 15           # trigger the client timeout
     python3 mock_apprise.py --port 8443 --tls-cert c.pem --tls-key k.pem
 
@@ -15,6 +16,7 @@ Do not expose this to untrusted networks and never use real secrets with it.
 """
 
 import argparse
+import base64
 import json
 import ssl
 import sys
@@ -25,7 +27,23 @@ TYPES = ("info", "success", "warning", "failure")
 FORMATS = ("text", "markdown", "html", "", None)
 
 
+def describe_auth(header: str) -> str:
+    """Show received Basic credentials; fine here because this mock only sees test values."""
+    if not header.startswith("Basic "):
+        return "no Basic credentials"
+    try:
+        return "user:password = " + base64.b64decode(header[6:]).decode("utf-8", "replace")
+    except ValueError:
+        return "malformed credentials"
+
+
 def make_handler(args: argparse.Namespace) -> type[BaseHTTPRequestHandler]:
+    expected_auth = ""
+    if args.user:
+        expected_auth = (
+            "Basic " + base64.b64encode(f"{args.user}:{args.password}".encode()).decode()
+        )
+
     class Handler(BaseHTTPRequestHandler):
         def _reply(self, status: int, text: str = "") -> None:
             data = json.dumps({"mock": text or status}).encode()
@@ -50,6 +68,15 @@ def make_handler(args: argparse.Namespace) -> type[BaseHTTPRequestHandler]:
             print("body:\n" + str(payload.get("body")), flush=True)
 
             time.sleep(args.delay)
+            if args.user:
+                got = self.headers.get("Authorization", "")
+                ok = got == expected_auth
+                print(
+                    f"auth: {'OK' if ok else 'REJECTED'} (received {describe_auth(got)})",
+                    flush=True,
+                )
+                if not ok:
+                    return self._reply(401, "authentication required")
             if args.status:
                 return self._reply(args.status, "forced status")
             prefix, _, key = self.path.partition("/notify/")
@@ -74,6 +101,8 @@ def main() -> int:
     parser.add_argument("--known-ids", nargs="+", default=["checkmk"])
     parser.add_argument("--status", type=int, default=0, help="always answer this HTTP status")
     parser.add_argument("--delay", type=float, default=0, help="seconds before answering")
+    parser.add_argument("--user", help="require HTTP Basic auth with this user")
+    parser.add_argument("--password", default="", help="password for --user (test value only)")
     parser.add_argument("--tls-cert")
     parser.add_argument("--tls-key")
     args = parser.parse_args()

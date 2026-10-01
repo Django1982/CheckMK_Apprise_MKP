@@ -69,13 +69,31 @@ Field names below are conceptual. The implementation may choose concise stable k
 |---|---:|---|---|
 | API base URL | yes | none | `https://apprise.example.net` style base, no `/notify/...` entered by user |
 | Config ID | yes | none | Saved Apprise configuration key/id |
-| Credentials | conditional | none | Exact UI depends on verified Apprise API access mode/auth behavior |
+| Username | conditional | none | HTTP Basic user (`NOTIFY_PARAMETER_USERNAME`); must be set together with the password |
+| Password | conditional | none | Checkmk `Password` form spec (explicit or password store); see "Credentials" below |
 | Routing tag | no | unset | Pass-through Apprise tag expression |
 | Message format | yes | `markdown` | `text`, `markdown`, optionally `html` |
 | Verify TLS | yes | `true` | Secure default |
 | Timeout seconds | yes | `10` proposed | Bound and validate range |
 
 Secrets must use a Checkmk password-store capable field/API where applicable.
+
+## Credentials (M2)
+
+Apprise API authentication is HTTP Basic (`Authorization: Basic ...`) on every request. Access modes per configuration (verified against the Apprise API README):
+
+| Mode | Credentials | Tag |
+|---|---|---|
+| `user` | required | optional |
+| `locked` | required | specific tag, `all` rejected |
+| `public` | none | specific tag, `all` rejected |
+| `disabled` | admin only | n/a |
+
+Leave username/password unset for `public`. `locked` and `public` need a routing tag; a missing tag shows up as HTTP 400 (exit 2).
+
+A `Password` form spec is flattened by Checkmk into `NOTIFY_PARAMETER_PASSWORD_1` (`cmk_postprocessed`), `_2` (`explicit_password` or `stored_password`), `_3_1` (id) and `_3_2` (value, empty for stored). An explicit password is read from `_3_2`. A stored password is resolved with `cmk.utils.password_store.extract(id)`, imported lazily and only for stored passwords.
+
+**Decision (approved by the maintainer on 2026-10-01, on a test instance):** `cmk.utils.password_store` is not a documented public extension API. It is what Checkmk's bundled notification plugins use, and its docstring says it is intended for third-party plugins and must not change behavior. No public alternative for resolving the store in a notification script was found. If it is unavailable, the script exits 2 with a generic message. Credentials over plain `http://` are allowed but print a visible warning.
 
 ## Apprise endpoint
 

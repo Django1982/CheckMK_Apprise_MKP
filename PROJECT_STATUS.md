@@ -4,8 +4,8 @@
 
 ## Current state
 
-- **Active milestone:** M1 – Notification Core (branch `feat/notification-core`)
-- **Overall status:** M0.2 done (merged, PR #3); M1 implemented, not verified end-to-end (unit tests only, no Apprise server yet)
+- **Active milestone:** M3 – Routing & Formatting
+- **Overall status:** M0.2 done (merged, PR #3); M0.2 and M1 done; M2 verified on a Checkmk 2.5 test site (mock Apprise)
 - **Last verified milestone:** M0.2 – Technical Skeleton
 - **Last updated:** 2026-10-01
 - **Updated by:** Claude Code (M0.2 implementation session)
@@ -16,8 +16,8 @@
 |---|---|---|
 | M0.1 – Project Preparation | done | planning/repository baseline prepared; repository sanity assets included |
 | M0.2 – Technical Skeleton | done | install/enable/uninstall, method selectable, form + validation + save/reload, stub invocation (exit 2) verified manually on a Checkmk 2.5 site (Python 3.13); `NOTIFY_PARAMETER_*` value dump deferred to M2 |
-| M1 – Notification Core | verified (mock) | 48 unit tests + manual Checkmk runs against the mock for main events, failure paths, Unicode and log inspection; open: ack/downtime-end/custom/flapping-stop/host-UP manual runs (unit-tested only), HTTPS/TLS manual test (maintainer tests separately), real Apprise API |
-| M2 – Native Checkmk UX | not started | not yet implemented |
+| M1 – Notification Core | done (mock-verified; merged in PR #4) | 48 unit tests + manual Checkmk runs against the mock for main events, failure paths, Unicode and log inspection; open: ack/downtime-end/custom/flapping-stop/host-UP manual runs (unit-tested only), HTTPS/TLS manual test (maintainer tests separately), real Apprise API |
+| M2 – Native Checkmk UX | done (mock-verified) | `NOTIFY_PARAMETER_*` names/formats confirmed (bool `True`/`False`, int, empty tag omitted); explicit and password-store passwords reach the server as Basic auth; wrong password -> HTTP 401/exit 2; GUI hides stored password; log shows only parameter names. Not verified against a real Apprise 'locked' config |
 | M3 – Routing & Formatting | not started | not yet implemented |
 | M4 – Hardening | not started | not yet implemented |
 | M5 – Release Readiness | not started | not yet implemented |
@@ -50,6 +50,8 @@ M1 code complete locally. Open items:
 
 ## Blockers
 
+- None. (M2 decision recorded: using `cmk.utils.password_store.extract` for stored passwords was approved by the maintainer on 2026-10-01; see `docs/TECHNICAL_SPEC.md`, "Credentials".)
+
 None. Notes:
 
 - The site runs Python 3.13 (Checkmk 2.5); `pyproject.toml` still targets py312, harmless.
@@ -80,10 +82,11 @@ Record only commands that were actually executed. Replace/add rows as work progr
 | 2026-10-01 | `python scripts/build_mkp.py` | passed | apprise-0.1.0.mkp, reproducible (tested) |
 | 2026-10-01 | manual: mkp add/enable, method selectable, form, validation, save/reload, mkp remove | passed | after fixes for script title line and `Message` validator crash; Checkmk 2.5 test site `dev` |
 | 2026-10-01 | manual: test notification (host, recipient cmkadmin) | passed | stub output shown, exit 2, no traceback |
-| - | `NOTIFY_PARAMETER_*` dump | not run | moved to M2 |
+| 2026-10-01 | manual M2 via Checkmk against mock with `--user/--password`: explicit password, password-store password, wrong password, GUI secrecy, `notify.log` | passed | store value resolved at runtime; wrong passwords rejected with exit 2 |
 | 2026-10-01 | manual M1 against `scripts/mock_apprise.py` via Checkmk (v0.2.0): host DOWN, downtime start, service WARN/CRIT/UNKNOWN, real RECOVERY (fake check result), flapping start, empty tag, plug-in output | passed | titles, Apprise `type`, `format`, tag omitted when empty all as specified; boolean/integer parameters accepted by the parser; a transient failure was shown by Checkmk as temporary (exit 1) |
 | 2026-10-01 | manual M1 failure paths via Checkmk against mock: timeout, HTTP 503, connection refused (all exit 1, Checkmk retries), HTTP 400 (exit 2, no retry); Unicode plug-in output; `notify.log` inspected | passed | log contains only parameter names, no URL/config id/secret |
 | 2026-10-01 | `python -m unittest discover -s tests/unit` | passed (48 tests) | M1 core incl. mock server transport tests |
+| 2026-10-01 | `python -m unittest discover -s tests/unit` (M2 branch) | passed (59 tests) | adds authentication tests with a fake password store |
 | 2026-10-01 | `python -m ruff check .` / `ruff format` | passed | |
 | 2026-10-01 | `python scripts/build_mkp.py` | passed | apprise-0.2.0.mkp |
 

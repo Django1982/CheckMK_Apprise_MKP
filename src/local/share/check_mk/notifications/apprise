@@ -16,6 +16,7 @@ Exit codes follow Checkmk: 0 sent, 1 temporary failure (retry later),
 Secrets/URLs are never printed: diagnostics only name the failing category.
 """
 
+import base64
 import json
 import os
 import re
@@ -25,13 +26,13 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 EXIT_OK = 0
 EXIT_TEMPORARY = 1
 EXIT_PERMANENT = 2
 
-USER_AGENT = "checkmk-apprise-notification/0.2"
+USER_AGENT = "checkmk-apprise-notification/0.3"
 SUPPORTED_FORMATS = ("markdown", "text", "html")
 CONFIG_ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 TIMEOUT_RANGE = (1, 120)
@@ -56,6 +57,8 @@ class Config:
     message_format: str
     verify_tls: bool
     timeout: int
+    username: str = ""
+    password: str = field(default="", repr=False)  # never print or log
 
 
 @dataclass(frozen=True)
@@ -106,6 +109,33 @@ def validate_base_url(raw: str) -> str:
     return urllib.parse.urlunsplit((parts.scheme, parts.netloc, parts.path.rstrip("/"), "", ""))
 
 
+def resolve_password(env: dict[str, str]) -> str:
+    """Return the password from the Checkmk FormSpec ``Password`` parameter.
+
+    Checkmk flattens ``("cmk_postprocessed", kind, (id, value))`` into
+    NOTIFY_PARAMETER_PASSWORD_1 / _2 / _3_1 / _3_2. ``explicit_password`` carries the
+    value itself; ``stored_password`` carries the password-store id, which only
+    Checkmk's ``cmk.utils.password_store.extract`` can resolve (the same call
+    Checkmk's bundled notification plugins use). It is imported lazily so that the
+    script has no Checkmk dependency unless the password store is actually used.
+    """
+    prefix = PARAMETER_PREFIX + "PASSWORD_"
+    kind = env.get(prefix + "2", "")
+    if kind == "explicit_password":
+        return env.get(prefix + "3_2", "")
+    if kind == "stored_password":
+        store_id = env.get(prefix + "3_1", "")
+        if not store_id:
+            raise ConfigError("password store entry is missing")
+        try:
+            from cmk.utils.password_store import extract  # noqa: PLC0415
+
+            return extract(store_id)
+        except Exception:  # noqa: BLE001 - never echo lower-level text
+            raise ConfigError("password could not be read from the password store") from None
+    return ""
+
+
 def parse_config(env: dict[str, str]) -> Config:
     def param(name: str) -> str:
         return env.get(PARAMETER_PREFIX + name, "").strip()
@@ -133,7 +163,16 @@ def parse_config(env: dict[str, str]) -> Config:
     if not TIMEOUT_RANGE[0] <= timeout <= TIMEOUT_RANGE[1]:
         raise ConfigError(f"TIMEOUT must be between {TIMEOUT_RANGE[0]} and {TIMEOUT_RANGE[1]}")
 
+    username = param("USERNAME")
+    password = resolve_password(env)
+    if bool(username) != bool(password):
+        raise ConfigError("USERNAME and PASSWORD must be set together")
+    if ":" in username:
+        raise ConfigError("USERNAME must not contain a colon")
+
     return Config(
+        username=username,
+        password=password,
         base_url=validate_base_url(param("BASE_URL")),
         config_id=config_id,
         tag=param("TAG"),
@@ -307,7 +346,9 @@ def _status_result(status: int) -> Result:
     if code == EXIT_TEMPORARY:
         return Result(code, f"Apprise notification temporarily failed: HTTP {status}")
     hint = ""
-    if status in (400, 401, 403, 404):
+    if status in (401, 403):
+        hint = " - check credentials and the Apprise access mode"
+    elif status in (400, 404):
         hint = " - check Config ID, routing tag and Apprise access mode"
     elif 300 <= status < 400:
         hint = " - redirects are not followed, use the final Apprise URL"
@@ -328,14 +369,18 @@ def _error_result(error: BaseException) -> Result:
 
 
 def send(config: Config, payload: dict[str, str]) -> Result:
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "User-Agent": USER_AGENT,
+    }
+    if config.username:
+        credentials = f"{config.username}:{config.password}".encode()
+        headers["Authorization"] = "Basic " + base64.b64encode(credentials).decode("ascii")
     request = urllib.request.Request(  # noqa: S310 - scheme validated in validate_base_url
         build_url(config),
         data=json.dumps(payload).encode("utf-8"),
-        headers={
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-            "User-Agent": USER_AGENT,
-        },
+        headers=headers,
         method="POST",
     )
     handlers: list = [_NoRedirect()]
@@ -364,6 +409,8 @@ def main(env: dict[str, str]) -> int:
         return EXIT_PERMANENT
     if not config.verify_tls:
         print("WARNING: TLS certificate verification is disabled")
+    if config.username and config.base_url.startswith("http://"):
+        print("WARNING: credentials are sent over unencrypted HTTP")
     result = send(config, build_payload(config, event))
     print(result.message)
     return result.exit_code
