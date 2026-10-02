@@ -32,6 +32,8 @@ Tag `v1.0.0` on 2026-10-02 (commit `19ba385`). Release assets `apprise-1.0.0.mkp
 
 Repository settings (2026-10-02): `.github/CODEOWNERS` names the maintainer (PR #20); the branch ruleset `Default Rule` on `main` is active with the settings in `docs/GITHUB_GOVERNANCE.md` (since the same day also "require branches to be up to date": open pull requests must be updated after `main` moves) (PR #21 served as the test pull request: required checks listed, squash merge worked).
 
+Note on history: commit `9e66b6b` on `main` carries the subject "docs: record that branches must be up to date before merging (#24)" but contains Dependabot's bump of `actions/upload-artifact` from 4 to 7 (PR #24). It was merged by mistake under the wrong PR number; the change itself is harmless (its checks, including the `release-mkp` dry run, passed). The actual documentation change is PR #25. `main` is protected against force pushes, so the subject stays.
+
 ## Findings review (external review, 2026-10-01)
 
 | Finding | Decision |
