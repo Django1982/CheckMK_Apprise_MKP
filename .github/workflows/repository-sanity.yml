@@ -33,7 +33,12 @@ jobs:
             docs/DEVELOPMENT_PLAN.md \
             docs/TECHNICAL_SPEC.md \
             docs/GITHUB_GOVERNANCE.md \
-            docs/LICENSING.md \n            docs/INSTALLATION.md \n            docs/CONFIGURATION.md \n            docs/TROUBLESHOOTING.md \n            docs/COMPATIBILITY.md \n            docs/RELEASE_CHECKLIST.md; do
+            docs/LICENSING.md \
+            docs/INSTALLATION.md \
+            docs/CONFIGURATION.md \
+            docs/TROUBLESHOOTING.md \
+            docs/COMPATIBILITY.md \
+            docs/RELEASE_CHECKLIST.md; do
             test -s "$file" || { echo "Missing/empty required file: $file"; exit 1; }
           done
 
