@@ -2,7 +2,7 @@
 
 A planned Checkmk 2.5 notification extension that forwards Checkmk notification events to an Apprise API server and lets Apprise perform the final provider routing.
 
-> Status: working pre-release (0.x). Notification delivery, authentication and message formatting are implemented and tested against a mock and a real Apprise API; release readiness (M5) is still open. See [`PROJECT_STATUS.md`](PROJECT_STATUS.md).
+> Status: release 1.0.0. Verified on a Checkmk 2.5 test site and against a real Apprise 2.0 (see [`docs/COMPATIBILITY.md`](docs/COMPATIBILITY.md) for exactly what was run). Project state: [`PROJECT_STATUS.md`](PROJECT_STATUS.md).
 
 ## Intended architecture
 
@@ -29,7 +29,7 @@ The Checkmk integration deliberately remains provider-agnostic. Discord, Matrix,
 
 ## Project state
 
-Milestones M0.1 to M3 are done; M4 (hardening) is in progress, M5 (release readiness) is next. The current state, open items and verification log are in [`PROJECT_STATUS.md`](PROJECT_STATUS.md).
+Milestones M0.1 to M4 are done; M5 (release readiness) ends with the `v1.0.0` tag. The current state, open items and verification log are in [`PROJECT_STATUS.md`](PROJECT_STATUS.md).
 
 ## Documentation
 

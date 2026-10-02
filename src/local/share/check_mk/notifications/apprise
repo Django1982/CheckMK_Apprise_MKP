@@ -34,7 +34,7 @@ EXIT_OK = 0
 EXIT_TEMPORARY = 1
 EXIT_PERMANENT = 2
 
-USER_AGENT = "checkmk-apprise-notification/0.8"
+USER_AGENT = "checkmk-apprise-notification/1.0"
 SUPPORTED_FORMATS = ("text", "html")  # no Markdown: Apprise cannot convert it to text targets
 CONFIG_ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 TIMEOUT_RANGE = (1, 120)
