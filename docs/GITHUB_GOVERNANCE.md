@@ -69,7 +69,7 @@ The ruleset `Default Rule` targets `main` and is set up for a single maintainer:
 - restrict deletions, block force pushes, require linear history
 - pull request required with **0** approvals, stale approvals dismissed, conversation resolution required, merge method **squash only**
 - **code owner review is off** (the only code owner is also the author and cannot approve their own pull request); enable it together with a second maintainer
-- required status checks: `repository-sanity`, `dependency-review`, `unit-tests`; "require branches to be up to date" is off
+- required status checks: `repository-sanity`, `dependency-review`, `unit-tests`; "require branches to be up to date" is **on**: when `main` moves on, an open pull request (typically a Dependabot update) must be brought up to date (GitHub "Update branch", `gh pr update-branch N`, or `@dependabot rebase`) and its checks must pass again before it can be merged
 - not required: `release-mkp` (it only runs when the build or the release workflow changes)
 
 Baseline required checks once workflows have run at least once:

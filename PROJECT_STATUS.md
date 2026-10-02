@@ -30,7 +30,7 @@ None required. Optional backlog items below; no blocker.
 
 Tag `v1.0.0` on 2026-10-02 (commit `19ba385`). Release assets `apprise-1.0.0.mkp` (SHA-256 `fe90228fbb551b0eb4b55891c0eb0d08440c9aae56ee2dcd05ad6c035f1e3511`) and `apprise-1.0.0.mkp.sha256`. Verified by the maintainer: checksum of the downloaded file, install on CE (CLI, core `nagios`) and EE (GUI), rule, delivery of a service problem, downtime cancelled/start/end with the correct titles and comments.
 
-Repository settings (2026-10-02): `.github/CODEOWNERS` names the maintainer (PR #20); the branch ruleset `Default Rule` on `main` is active with the settings in `docs/GITHUB_GOVERNANCE.md` (PR #21 served as the test pull request: required checks listed, squash merge worked).
+Repository settings (2026-10-02): `.github/CODEOWNERS` names the maintainer (PR #20); the branch ruleset `Default Rule` on `main` is active with the settings in `docs/GITHUB_GOVERNANCE.md` (since the same day also "require branches to be up to date": open pull requests must be updated after `main` moves) (PR #21 served as the test pull request: required checks listed, squash merge worked).
 
 ## Findings review (external review, 2026-10-01)
 
@@ -103,7 +103,6 @@ Record only commands that were actually executed.
 
 - Optional link back to Checkmk in the message: `NOTIFY_HOSTURL` is relative (`/check_mk/index.py?...`), so a field for the Checkmk base URL would be required.
 - Downtime end time: closed, Checkmk passes no end time to notification scripts (a Livestatus query could add it; not planned). The expected duration can go into the downtime comment.
-- Consider "require branches to be up to date" in the ruleset once pull requests run in parallel.
 - Checkmk Exchange: not claimed; would need a check against its current submission requirements first.
 
 ## Handoff notes
