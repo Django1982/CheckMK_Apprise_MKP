@@ -7,6 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 Milestones M0.1 to M2 are implemented and merged; M3 (message formatting) and M4 (hardening) are in progress, see `PROJECT_STATUS.md` for the current state. Commands:
 
 ```bash
+python -m pip install -r requirements-dev.txt                # pinned ruff + apprise (tests only, never a runtime dependency)
 python -m unittest discover -s tests/unit -v              # all tests
 python -m unittest discover -s tests/unit -k MkpBuildTest  # single test (substring match)
 python -m ruff check .                                    # lint (config in pyproject.toml)

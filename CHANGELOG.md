@@ -6,6 +6,10 @@ The project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- development tools are pinned in `requirements-dev.txt` (ruff 0.16.9; Apprise 2.0.0 as a test-only reference) and kept current by Dependabot; CI and the release workflow install them, so the cross-check tests against Apprise's format converters now run in CI. No runtime dependency was added
+
 ## [1.0.0] - 2026-10-02
 
 First release. A Checkmk 2.5 notification method `apprise` that sends host and service notifications to an Apprise API server (`POST /notify/{config_id}`) and leaves provider routing to Apprise. License: GPL-2.0-only.
