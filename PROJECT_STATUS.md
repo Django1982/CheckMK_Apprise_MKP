@@ -18,7 +18,7 @@
 | M0.2 – Technical Skeleton | done | install/enable/uninstall, method selectable, form validation, save/reload verified on a Checkmk 2.5 site (Python 3.13) |
 | M1 – Notification Core | done (mock-verified) | manual Checkmk runs against the mock for host/service problem, recovery, UNKNOWN, downtime start, flapping start, failure paths, Unicode, log inspection. Manual runs still open: acknowledgement, downtime end, custom, flapping stop, host UP (unit-tested only) |
 | M2 – Native Checkmk UX | done (mock-verified) | `NOTIFY_PARAMETER_*` formats confirmed (bool `True`/`False`, int, empty tag omitted); explicit and password-store passwords sent as Basic auth; wrong password -> HTTP 401/exit 2; GUI hides the password; log shows only parameter names |
-| M3 – Routing & Formatting | implemented, not verified | Markdown escaping, bold labels, hard line breaks, `html` removed; tag pass-through, type mapping and content bounds from M1; unit-tested; manual rendering check pending; no Checkmk deep links (deliberate) |
+| M3 – Routing & Formatting | done (verified on a real target) | Markdown escaping, bold labels, hard line breaks, `html` removed; tag pass-through, type mapping and content bounds from M1; unit-tested. Real Apprise -> Signal (2026-10-02): escaping is applied as designed, but Signal shows Markdown as raw text (backslashes/asterisks visible). Open decision: default message format (see Open items); no Checkmk deep links (deliberate) |
 | M4 – Hardening | in progress | external review findings applied (see below); HTTPS/TLS manual test pending (maintainer, against a real instance) |
 | M5 – Release Readiness | not started | |
 
@@ -32,7 +32,7 @@ Finish M4: land the classification fixes, then document timeouts/limits and exte
 |---|---|
 | HTTP 204 treated as success (P0) | Fixed: only 200 is delivered; every other 2xx is exit 2. Current Apprise API answers 404 for an empty configuration; older versions answered 204 |
 | 424 ambiguous (P1) | Kept as exit 1, documented as a deliberate trade-off with troubleshooting hint |
-| TLS certificate failure retryable (P1) | Kept as exit 1 deliberately (alerts should not be lost while an admin fixes the certificate); message now says what to check. Open for maintainer decision: switch to exit 2 |
+| TLS certificate failure retryable (P1) | Kept as exit 1 deliberately (alerts should not be lost while an admin fixes the certificate); message now says what to check. Maintainer confirmed exit 1 for now; re-evaluate after the real HTTPS test |
 | Missing `NOTIFICATIONTYPE` defaulted to PROBLEM (P1) | Fixed: invalid event, exit 2 |
 | Implicit environment proxies (P2) | Decided: ignored, documented, test proves it |
 | TLS-disabled warning on `http://` (P2) | Fixed: only for `https://` |
@@ -45,7 +45,9 @@ Finish M4: land the classification fixes, then document timeouts/limits and exte
 - Real Apprise API (maintainer tests at home): `locked` mode with Basic auth and tag, HTTPS with a real certificate, how Markdown renders on a real target.
 - M1 manual events listed above.
 - Documentation (M5): configure exactly one recipient in the Checkmk rule; "all contacts" calls the script once per contact and would send duplicates. Repeated 424 means: check routing tags and the Apprise configuration.
-- Maintainer decision: TLS certificate verification failure exit code (1 now).
+- TLS certificate verification failure stays exit 1 (maintainer decision 2026-10-01, to be re-evaluated after the HTTPS test against the maintainer's real Apprise instance).
+
+- Maintainer decision: default message format. Signal (via Apprise) does not render Markdown, so "Plain text" reads better there; Markdown suits targets that render it (Matrix, Discord, mail). Recommendation: default to plain text, Markdown opt-in. To be tested: plain text on Signal.
 
 ## Blockers
 
@@ -78,7 +80,7 @@ Record only commands that were actually executed.
 | 2026-10-01 | mutation check of the proxy test | passed | test fails without `ProxyHandler({})` |
 | 2026-10-01 | `python -m ruff check .` / `ruff format` | passed | ruff 0.16.9 |
 | 2026-10-01 | `python scripts/build_mkp.py` | passed | apprise-0.3.1.mkp |
-| - | manual HTTPS/TLS test, real Apprise API | not run | maintainer, later |
+| 2026-10-02 | manual HTTPS notification through Checkmk to the maintainer's real Apprise API (internal service, Let's Encrypt certificate) | passed (reported by maintainer) | package 0.3.1 (before M3), routing tag only; Basic auth was verified separately against the mock; plain (unformatted) message as expected. Markdown rendering of 0.4.0 still to be checked; a home Checkmk Community Edition instance is also available for tests |
 
 ## Next concrete actions
 

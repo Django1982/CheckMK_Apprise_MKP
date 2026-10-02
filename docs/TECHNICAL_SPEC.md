@@ -173,6 +173,10 @@ Notification event type must be considered in addition to current state so recov
 
 ## Message format
 
+Supported formats are `markdown` (default) and `text`; `html` is not supported because it would need its own escaping.
+
+In `markdown` mode every monitoring value (host, service, output, comment, ...) is escaped (`\ ` * _ [ ] < > ~ | #`, plus list markers at line start), labels are bold and each line ends with two spaces so Markdown keeps the line breaks. Titles are plain text and never escaped. `text` mode uses the layout below unchanged.
+
 ### Service notification baseline
 
 ```text

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 ## State of the repo
 
-M0.2 skeleton implemented (notification stub, ruleset form, MKP builder); delivery logic starts in M1. Commands:
+Milestones M0.1 to M2 are implemented and merged; M3 (message formatting) and M4 (hardening) are in progress, see `PROJECT_STATUS.md` for the current state. Commands:
 
 ```bash
 python -m unittest discover -s tests/unit -v              # all tests
@@ -33,7 +33,7 @@ Notification script pipeline, kept as small pure functions so each is unit-testa
 Cross-file contracts that are easy to get wrong:
 
 - Parameter dict key `foo_bar` reaches the script as `NOTIFY_PARAMETER_FOO_BAR`; the ruleset form keys and the script's env parsing must stay in sync.
-- Exit codes: `0` sent, `1` temporary failure (Checkmk retries), `2` permanent failure. The HTTP status → exit code classification (esp. 401/403, 404, 408, 409, 429, 5xx) must be documented in M4. No custom retry queue.
+- Exit codes: `0` sent, `1` temporary failure (Checkmk retries), `2` permanent failure. The HTTP status → exit code classification (esp. 401/403, 404, 408, 409, 429, 5xx) is documented in `docs/TECHNICAL_SPEC.md` (only HTTP 200 counts as delivered). No custom retry queue.
 - Secrets use Checkmk password-store form fields and must never appear in stdout/stderr, including exception text. TLS verify defaults on; every request has a timeout; build URLs with `urllib.parse` and validate `config_id`.
 - Out of scope for v1: embedded Apprise/CLI transport, stateless `/notify/`, attachments, user templates, bulk notifications.
 
