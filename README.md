@@ -31,6 +31,14 @@ The Checkmk integration deliberately remains provider-agnostic. Discord, Matrix,
 
 Milestones M0.1 to M3 are done; M4 (hardening) is in progress, M5 (release readiness) is next. The current state, open items and verification log are in [`PROJECT_STATUS.md`](PROJECT_STATUS.md).
 
+## Documentation
+
+- [`docs/INSTALLATION.md`](docs/INSTALLATION.md) – install, update, remove
+- [`docs/CONFIGURATION.md`](docs/CONFIGURATION.md) – Apprise preparation, rule fields, tag examples, message formats
+- [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md) – messages, exit codes, remedies
+- [`docs/COMPATIBILITY.md`](docs/COMPATIBILITY.md) – verified combinations only
+- [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md) – release process
+
 ## Compatibility
 
 | Component | Supported / verified |
