@@ -4,7 +4,7 @@
 
 ## Current state
 
-- **Active milestone:** M5 – Release Readiness (acceptance); optional CA file on branch `feat/custom-ca`
+- **Active milestone:** M5 – Release Readiness: 1.0.0 prepared on branch `release/1.0.0`, waiting for the maintainer's last checks and the `v1.0.0` tag
 - **Overall status:** M0.1 to M3 done and merged to `main` (PR #3 to #11); M4 merged (PR #12); M5 documentation (PR #13) and release workflow (PR #14) merged; custom CA file merged (PR #15)
 - **Last verified milestone:** M3 – Routing & Formatting (Checkmk 2.5 test site, real Apprise 2.0 -> Signal)
 - **Last updated:** 2026-10-02
@@ -20,7 +20,7 @@
 | M2 – Native Checkmk UX | done (mock-verified) | `NOTIFY_PARAMETER_*` formats confirmed (bool `True`/`False`, int, empty tag omitted); explicit and password-store passwords sent as Basic auth; wrong password -> HTTP 401/exit 2; GUI hides the password; log shows only parameter names |
 | M3 – Routing & Formatting | done (verified on a real target) | tag pass-through, type mapping, content bounds, message formats `text` (default) and `html` (rich text; Apprise converts per target, Markdown removed because Apprise cannot convert it to text targets). Real Apprise 2.0 -> Signal: plain text and rich text arrive clean. No Checkmk deep links (deliberate) |
 | M4 – Hardening | done (verified on the test site; HTTPS failure cases against the real instance optional) | classification matrix, TLS/proxy/redirect handling, total request deadline (covers DNS and slow-drip responses), value size limits, bounded response read, troubleshooting guide; 91 unit tests (mutation-checked deadline tests). Package 0.7.0 on the test site: delivery with credentials, rich text on Signal, total deadline (`--delay 15` -> timeout, exit 1, Checkmk retries) verified 2026-10-02 |
-| M5 – Release Readiness | in progress | installation, configuration, compatibility and release checklist documents written; release automation and acceptance on real systems pending (see Roadmap) |
+| M5 – Release Readiness | release candidate 1.0.0 | documentation, release workflow and compatibility matrix done; 1.0.0 version/changelog prepared (PR `release/1.0.0`). Remaining: maintainer's final checks on the Community Edition site, then the `v1.0.0` tag (first real run of the publishing step) |
 
 ## Current objective
 
@@ -99,7 +99,7 @@ Record only commands that were actually executed.
 1. ~~M4 closing PR~~ done (PR #12).
 2. ~~M5 documentation~~ merged (PR #13): `docs/INSTALLATION.md`, `docs/CONFIGURATION.md`, `docs/COMPATIBILITY.md`, `docs/RELEASE_CHECKLIST.md`, README links. Written; the GUI upload path in the installation guide and `cmk -R` are not yet verified step by step on a fresh site.
 3. ~~M5 release automation~~ merged (PR #14): `.github/workflows/release.yml` (tag-triggered, dry run on pull requests that touch the build), checksum file from `scripts/build_mkp.py`. The publishing step only runs for a real tag and is therefore verified with the first tag; version 1.0.0 and the changelog follow with the acceptance.
-4. **M5 acceptance (maintainer + agent):** clean install on a fresh Checkmk site (Community Edition at home), end-to-end delivery against the real Apprise (locked mode with credentials and tag, HTTPS), then tag v1.0.0. No Checkmk Exchange claims until its submission requirements were checked.
+4. **M5 acceptance (maintainer):** (a) install the 1.0.0 MKP on the Community Edition site (`mkp add`, `cmk -R`), create the rule, send a test notification to the real Apprise (locked mode, credentials, tag, HTTPS) and check `notify.log`; (b) optional manual runs of acknowledgement, downtime end, custom and host UP; (c) set the tag `v1.0.0` (`git tag v1.0.0 && git push origin v1.0.0`), check the GitHub release (MKP + `.sha256`) and verify the checksum. No Checkmk Exchange claims until its submission requirements were checked.
 5. **Backlog (last, not required for 1.0.0):**
    - ~~downtime end time in downtime notifications~~ closed: a real downtime-start dump (2026-10-02) shows Checkmk passes no end time (only `NOTIFY_HOSTDOWNTIME=1`, author and comment); documented in `docs/CONFIGURATION.md`, the comment can carry the duration. Only a Livestatus query could add it; not planned;
    - ~~optional CA certificate file field~~ implemented on `feat/custom-ca` (maintainer request: self-signed CA solution); verified against an internal CA host (see verification log);

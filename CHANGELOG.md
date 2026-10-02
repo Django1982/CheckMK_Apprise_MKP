@@ -1,42 +1,31 @@
 # Changelog
 
-All notable changes to this project will be documented here.
+All notable changes to this project are documented here.
 
-The project follows Semantic Versioning once release artifacts begin.
+The project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-02
+
+First release. A Checkmk 2.5 notification method `apprise` that sends host and service notifications to an Apprise API server (`POST /notify/{config_id}`) and leaves provider routing to Apprise. License: GPL-2.0-only.
+
 ### Added
 
-- M0.1 project preparation skeleton
-- initial architecture and technical specification
-- GitHub governance baseline
-- coding-agent assignment
-- M0.2 technical skeleton: `apprise` notification stub, `NotificationParameters` form (Ruleset API v1), reproducible stdlib MKP builder (`scripts/build_mkp.py`), unit tests, lint/test CI workflow and install smoke-test checklist
-- M1 notification core: `NOTIFY_*` parsing and validation, event/state to Apprise type mapping, deterministic host/service title and body, JSON payload, bounded stdlib HTTP client (no redirects, TLS verification on by default), HTTP/network failure classification to Checkmk exit codes 0/1/2, 47 unit tests with a local mock server
-- M2 authentication: optional HTTP Basic username and password (Checkmk `Password` form spec: explicit or password store), password-store resolution, visible warning for credentials over plain HTTP, mock server `--user/--password`
-- M3 message formatting: Markdown escaping of all monitoring values, bold labels and hard line breaks in `markdown` format; `html` removed from the accepted formats
-- M4 start: HTTP/transport classification hardening and tests (`tests/unit/test_hardening.py`); unit tests also run on Python 3.13 in CI
+- Notification script `apprise` using only the Python standard library (no Apprise package on the Checkmk server) and a Checkmk Ruleset API v1 `NotificationParameters` form named `apprise`.
+- Rule fields: Apprise base URL, configuration ID, routing tag, username and password (explicit or from the Checkmk password store), message format (plain text or rich text), TLS verification, optional CA certificate file for private CAs and self-signed certificates, request timeout.
+- Deterministic host and service messages for problems, recoveries, acknowledgements, downtimes, flapping and custom notifications, mapped to the Apprise types `info`, `success`, `warning` and `failure`.
+- Result classification to Checkmk exit codes: 0 delivered (HTTP 200 only), 1 temporary failure (timeouts, DNS/connection/TLS errors, HTTP 408/424/429/5xx), 2 permanent failure (invalid configuration or event, other 4xx, redirects). Checkmk's own spooler does the retries.
+- Safety properties: TLS verification on by default, total request deadline (including DNS), response bodies read only up to 4 KiB and never printed, credentials, URL and Config ID never printed, redirects not followed, environment proxies ignored, bounded value sizes, visible warnings for disabled TLS verification and for credentials over plain HTTP.
+- Reproducible MKP build (`scripts/build_mkp.py`) with SHA-256 checksum, tag-triggered release workflow, `scripts/mock_apprise.py` (stand-in Apprise API) and `scripts/notify_env_dump.py` (diagnostic script) for manual tests.
+- Documentation: installation, configuration (Apprise access modes, tag syntax, examples), troubleshooting, compatibility matrix, technical specification, release checklist.
+- 109 unit tests (mock HTTP servers, real self-signed certificates via `openssl`, cross-check against Apprise's own format converters when Apprise is installed) on Python 3.12 and 3.13.
 
-### Documentation
+### Notes
 
-- optional "CA certificate file (PEM)" with distinct error messages (missing, permissions, not a PEM certificate with the OpenSSL reason) for private CAs and self-signed certificates: only that file is trusted, host name check stays on, invalid files are configuration errors; TLS is now tested with real certificates (needs `openssl`, skipped without)
-- release workflow: a pushed `vX.Y.Z` tag builds the MKP reproducibly (built twice and compared), writes a SHA-256 checksum and publishes a GitHub release; pull requests touching the build run it as a dry run. `scripts/build_mkp.py` now also writes `<mkp>.sha256` and supports `--print-version`
-- installation, configuration (Apprise access modes, tag examples), compatibility matrix and release checklist added
-
-### Fixed
-
-- the comment of a downtime notification already contains the author; it is no longer appended a second time
-- the request timeout is now a total deadline (including DNS), so slow-drip responses and hanging lookups can no longer exceed it
-- value size limits tightened (output 1500, long output 2000, comment 1000, identifiers 255, tag 200) and tested for the worst case; added `docs/TROUBLESHOOTING.md`
-- message format: `markdown` is replaced by `html` (shown as "Rich text"); Apprise converts HTML to plain text, Markdown or HTML per target, whereas it cannot convert Markdown to plain text. Our own Markdown escaping is removed. Rules saved with the unreleased `markdown` value must be set to plain text or rich text again
-- plain text is now the default message format; Apprise has no Markdown->Text converter, so Markdown showed raw `**` and backslashes on text-only targets such as Signal
-- HTTP 204 (and any 2xx other than 200) was reported as delivered; it now fails with exit 2 because nothing was sent
-- a missing `NOTIFY_NOTIFICATIONTYPE` was silently treated as `PROBLEM`; it is now an invalid event (exit 2)
-- the "TLS verification disabled" warning is only printed for `https://` URLs
-- environment proxy variables are ignored deterministically; certificate verification failures now state what to check
-
-### Changed
-
-- licensing decision set to GPL-2.0-only after Checkmk extension compatibility review
-- corrected Checkmk notification exit-code semantics: 1 is retryable, 2 is permanent
+- Supported baseline: Checkmk 2.5.x, Apprise 2.0. Apprise's access modes `user`, `locked` (credentials and a specific tag) and `public` (a specific tag) are supported.
+- Message formats: plain text (default) and rich text. Markdown is not offered because Apprise cannot convert Markdown to plain-text targets such as Signal.
+- Checkmk passes no end time for downtimes to notification scripts; put the expected duration in the downtime comment.
+- Select exactly one recipient in the Checkmk rule; Checkmk calls the script once per contact.
+- `cmk.utils.password_store.extract` (not a documented public API, used by Checkmk's own plug-ins) resolves passwords from the password store, imported only when such a password is configured.
+- Not verified: delivery on the Community Edition (only installation was checked), rich text on a target that renders formatting, the Checkmk Exchange submission requirements (no compatibility is claimed).
