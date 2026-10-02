@@ -461,7 +461,7 @@ class PayloadTest(unittest.TestCase):
         self.assertEqual(self.payload(tag="ops,network")["tag"], "ops,network")
 
     def test_format_passthrough(self):
-        self.assertEqual(self.payload(message_format="markdown")["format"], "markdown")
+        self.assertEqual(self.payload(message_format="html")["format"], "html")
 
 
 class UrlAndTlsTest(unittest.TestCase):

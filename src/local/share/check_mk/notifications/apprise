@@ -17,6 +17,7 @@ Secrets/URLs are never printed: diagnostics only name the failing category.
 """
 
 import base64
+import html
 import json
 import os
 import re
@@ -32,8 +33,8 @@ EXIT_OK = 0
 EXIT_TEMPORARY = 1
 EXIT_PERMANENT = 2
 
-USER_AGENT = "checkmk-apprise-notification/0.5"
-SUPPORTED_FORMATS = ("markdown", "text")  # html would need its own escaping; not offered
+USER_AGENT = "checkmk-apprise-notification/0.6"
+SUPPORTED_FORMATS = ("text", "html")  # no Markdown: Apprise cannot convert it to text targets
 CONFIG_ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 TIMEOUT_RANGE = (1, 120)
 DEFAULT_TIMEOUT = 10
@@ -278,34 +279,29 @@ def build_title(event: Event) -> str:
     return f"{label}: {subject}{state}"
 
 
-MARKDOWN_SPECIAL = "\\`*_[]<>~|#"
-
-
-def escape_markdown(value: str) -> str:
-    """Neutralize Markdown syntax in monitoring data (host names, plug-in output, ...)."""
-    escaped = "".join("\\" + ch if ch in MARKDOWN_SPECIAL else ch for ch in value)
-    # list markers only matter at the start of a line
-    escaped = re.sub(r"(?m)^(\s*)([+-])(\s)", r"\1\\\2\3", escaped)
-    return re.sub(r"(?m)^(\s*)(\d+)\.(\s)", r"\1\2\\.\3", escaped)
-
-
 def build_body(event: Event, message_format: str = "text") -> str:
-    markdown = message_format == "markdown"
+    """Render the body as plain text or, for ``html``, as escaped HTML.
+
+    Apprise converts the input format to what each target needs (HTML -> text for
+    text-only targets such as Signal, HTML -> Markdown for Markdown targets, HTML
+    unchanged for HTML targets). Apprise has no Markdown -> text converter, which is
+    why Markdown is not offered. ``html.escape`` neutralizes every monitoring value.
+    """
+    rich = message_format == "html"
 
     def lines(pairs: list[tuple[str, str]]) -> str:
         rendered = []
         for label, value in pairs:
             if not value:
                 continue
-            if markdown:
-                value = escape_markdown(value)
-                label = f"**{label}:**"
+            multiline = value.startswith("\n")
+            if rich:
+                label = f"<b>{label}:</b>"
+                value = html.escape(value, quote=False).replace("\n", "<br>")
             else:
                 label = f"{label}:"
-            rendered.append(f"{label}{value}" if value.startswith("\n") else f"{label} {value}")
-        text = "\n".join(rendered)
-        # Markdown merges single newlines into one paragraph; two spaces force a line break
-        return "  \n".join(text.split("\n")) if markdown else text
+            rendered.append(f"{label}{value}" if multiline else f"{label} {value}")
+        return ("<br>" if rich else "\n").join(rendered)
 
     status = [("Service", event.service)] if event.what == "SERVICE" else []
     status += [("State", event.state), ("Output", event.output)]
@@ -320,7 +316,8 @@ def build_body(event: Event, message_format: str = "text") -> str:
         ("Site", event.site),
         ("Notification", event.notification_type),
     ]
-    return "\n\n".join(block for block in (lines(status), lines(context)) if block)
+    blocks = [block for block in (lines(status), lines(context)) if block]
+    return ("<br><br>" if rich else "\n\n").join(blocks)
 
 
 def build_payload(config: Config, event: Event) -> dict[str, str]:
