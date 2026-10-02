@@ -41,6 +41,9 @@ jobs:
             exit 1
           }
 
+      - name: Install development tools (pinned)
+        run: python -m pip install -r requirements-dev.txt
+
       - name: Unit tests
         run: python -m unittest discover -s tests/unit -v
 

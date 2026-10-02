@@ -1,0 +1,10 @@
+# Development and CI tools only. The notification script itself uses only the Python
+# standard library and has no runtime dependencies.
+#
+# ruff: linter/formatter, pinned so a new release cannot turn CI red unnoticed;
+#   Dependabot proposes updates.
+# apprise: test-only reference for the supported baseline (Apprise 2.0). It lets the
+#   cross-check tests in tests/unit/test_richtext.py compare our messages with Apprise's own
+#   format converters. Never imported by the plug-in.
+ruff==0.16.9
+apprise==2.0.0

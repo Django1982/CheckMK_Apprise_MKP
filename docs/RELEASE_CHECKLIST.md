@@ -9,7 +9,7 @@ Use this for every release, starting with `v1.0.0`. Release tags look like `v1.0
 - [ ] `CHANGELOG.md`: the `[Unreleased]` section is moved to the new version with the date
 - [ ] `PACKAGE_VERSION` in `scripts/build_mkp.py` and the `User-Agent` version in the script match the release (the script's user agent shows only major.minor)
 - [ ] CI is green on `main` (`repository-sanity`, `dependency-review`, `unit-tests`)
-- [ ] `python -m ruff check .` and `python -m unittest discover -s tests/unit` pass locally; with Apprise installed in a scratch venv the two cross-check tests also pass
+- [ ] `python -m ruff check .` and `python -m unittest discover -s tests/unit` pass locally; after `pip install -r requirements-dev.txt` no test is skipped (CI does this)
 - [ ] No secrets in fixtures, docs or logs (`grep -rIn -i "password\|token\|secret" tests docs src` reviewed)
 - [ ] Documentation matches the behavior: `README.md`, `docs/INSTALLATION.md`, `docs/CONFIGURATION.md`, `docs/TROUBLESHOOTING.md`, `docs/COMPATIBILITY.md`, `docs/TECHNICAL_SPEC.md`
 

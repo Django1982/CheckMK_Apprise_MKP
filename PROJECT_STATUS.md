@@ -96,13 +96,13 @@ Record only commands that were actually executed.
 | 2026-10-02 | `python -m unittest discover -s tests/unit`, `python -m ruff check .` at v1.0.0 | passed (109 tests, 2 skipped without Apprise; with Apprise 2.0.0 in a local venv all run) | CI on Python 3.12 and 3.13 |
 | 2026-10-02 | release workflow on tag `v1.0.0` | passed | published MKP + checksum; checksum equals a local rebuild from the tag |
 | 2026-10-02 | manual: release 1.0.0 downloaded from GitHub, checksum checked, installed on CE (`mkp`, `cmk -R`) and EE (GUI), delivery to the real Apprise, downtime cancelled/start/end messages | passed (reported by maintainer) | |
+| 2026-10-02 | clean virtual environment from `requirements-dev.txt` (ruff 0.16.9, apprise 2.0.0): `ruff check .`, all unit tests | passed (109 tests, none skipped) | the pinned set is what CI installs |
 | 2026-10-02 | branch ruleset on `main` activated; test pull request #21 | passed | required checks `repository-sanity`, `dependency-review`, `unit-tests` listed for the PR, squash merge worked; active rules read back via the GitHub API |
 
 ## Backlog (optional, not required)
 
 - Optional link back to Checkmk in the message: `NOTIFY_HOSTURL` is relative (`/check_mk/index.py?...`), so a field for the Checkmk base URL would be required.
 - Downtime end time: closed, Checkmk passes no end time to notification scripts (a Livestatus query could add it; not planned). The expected duration can go into the downtime comment.
-- Dependency pinning/Dependabot review for the test tooling (ruff is installed unpinned in CI).
 - Consider "require branches to be up to date" in the ruleset once pull requests run in parallel.
 - Checkmk Exchange: not claimed; would need a check against its current submission requirements first.
 
