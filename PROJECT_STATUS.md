@@ -51,7 +51,7 @@ Real Apprise -> Signal showed raw Markdown. Cause (Apprise sources): the API pas
 - Documentation (M5): configure exactly one recipient in the Checkmk rule; "all contacts" calls the script once per contact and would send duplicates. Repeated 424 means: check routing tags and the Apprise configuration.
 - TLS certificate verification failure stays exit 1 (maintainer decision 2026-10-01, to be re-evaluated after the HTTPS test against the maintainer's real Apprise instance).
 
-- Rich text (`html`) on real targets: Signal (text target), Signal with `?format=markdown`, Matrix/Discord/mail. Verified so far only with Apprise's converters in a local venv (Apprise 2.0.0): HTML -> text equals the plain layout for all fixtures, HTML -> Markdown gives bold labels. The maintainer's Apprise is 2.0, which is the supported baseline (documented in README and TECHNICAL_SPEC).
+- Rich text (`html`) on Signal (text target, Apprise 2.0): verified 2026-10-02 (package 0.6.0), arrives as the clean plain layout. Still open: Signal (text target), Signal with `?format=markdown`, Matrix/Discord/mail. Verified so far only with Apprise's converters in a local venv (Apprise 2.0.0): HTML -> text equals the plain layout for all fixtures, HTML -> Markdown gives bold labels. The maintainer's Apprise is 2.0, which is the supported baseline (documented in README and TECHNICAL_SPEC).
 - Backlog (cosmetic): downtime notifications do not say when the downtime ends. First capture the `NOTIFY_*` variables of a real downtime-start notification (temporary dump) to see whether the end time is available, then add it to the message (M3 polish or M5).
 
 ## Blockers
@@ -82,6 +82,7 @@ Record only commands that were actually executed.
 | 2026-10-01 | manual M1 against `scripts/mock_apprise.py` via Checkmk | passed | events, failure paths (timeout/503/refused -> exit 1; 400 -> exit 2), Unicode, `notify.log` free of URL/config id/secret |
 | 2026-10-01 | manual M2 via Checkmk against the mock with `--user/--password` | passed | explicit and password-store password, wrong password rejected, GUI secrecy |
 | 2026-10-01 | `python -m unittest discover -s tests/unit` (main + this fix branch) | passed (73 tests) | includes `test_hardening.py`; Python 3.10 locally |
+| 2026-10-02 | manual: package 0.6.0, format Rich text, real Apprise 2.0 -> Signal | passed (reported by maintainer) | message arrives as the plain layout, values verbatim, no markup characters |
 | 2026-10-01 | mutation check of the proxy test | passed | test fails without `ProxyHandler({})` |
 | 2026-10-01 | `python -m ruff check .` / `ruff format` | passed | ruff 0.16.9 |
 | 2026-10-01 | `python scripts/build_mkp.py` | passed | apprise-0.3.1.mkp |
