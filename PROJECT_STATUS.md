@@ -4,9 +4,9 @@
 
 ## Current state
 
-- **Active milestone:** none. Version 1.0.0 is released (tag `v1.0.0`, 2026-10-02); maintenance and backlog only
+- **Active milestone:** none. Current release: 1.0.1 (tag `v1.0.1`, 2026-10-02); 1.0.0 was the first. Maintenance and backlog only
 - **Overall status:** M0.1 to M5 done. Release published, `main` protected by an active branch ruleset (PR required, squash only, three required checks), `CODEOWNERS` set
-- **Last verified milestone:** M5 – the downloaded 1.0.0 release asset was installed on a Community Edition and an Enterprise site and delivered to the real Apprise
+- **Last verified milestone:** M5 – the downloaded 1.0.0 release asset was installed on a Community Edition and an Enterprise site and delivered to the real Apprise; the 1.0.1 asset's checksum equals a local rebuild from the tag
 - **Last updated:** 2026-10-02
 - **Updated by:** Claude Code
 
@@ -101,9 +101,9 @@ Record only commands that were actually executed.
 | 2026-10-02 | clean virtual environment from `requirements-dev.txt` (ruff 0.16.9, apprise 2.0.0): `ruff check .`, all unit tests | passed (109 tests, none skipped) | the pinned set is what CI installs |
 | 2026-10-02 | branch ruleset on `main` activated; test pull request #21 | passed | required checks `repository-sanity`, `dependency-review`, `unit-tests` listed for the PR, squash merge worked; active rules read back via the GitHub API |
 
-## Release 1.0.1 (prepared)
+## Release 1.0.1
 
-Distribution hardening after an external review (2026-10-02): CA file restricted to the site directory, `version.usable_until = 2.5.99`, `download_url`, README/SECURITY wording, changelog note about the Community Edition test. The tag `v1.0.1` is set by the maintainer (not yet set when this was written). GitHub Private Vulnerability Reporting is enabled (maintainer, 2026-10-02), as `SECURITY.md` says. Exchange: not submitted; risks listed in `docs/COMPATIBILITY.md` (password-store call, which is not a documented API). Internal host names are no longer written into the repository (one earlier mention remains in the git history; `main` is protected against rewrites).
+Tag `v1.0.1` on 2026-10-02 (commit `76becfb`); assets `apprise-1.0.1.mkp` (SHA-256 `0c0f6554d691a3f473d129da01f3ae92dfd97596aeffe0da6df4985023c71bbd`) and `apprise-1.0.1.mkp.sha256`, published by the release workflow, not a pre-release; a local rebuild from the tag gives the same checksum. Distribution hardening after an external review (2026-10-02): CA file restricted to the site directory, `version.usable_until = 2.5.99`, `download_url`, README/SECURITY wording, changelog note about the Community Edition test. GitHub Private Vulnerability Reporting is enabled (maintainer, 2026-10-02), as `SECURITY.md` says. Exchange: not submitted; risks listed in `docs/COMPATIBILITY.md` (password-store call, which is not a documented API). Internal host names are no longer written into the repository (one earlier mention remains in the git history; `main` is protected against rewrites).
 
 ## Backlog (optional, not required)
 
