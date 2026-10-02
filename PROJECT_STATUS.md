@@ -78,7 +78,7 @@ Record only commands that were actually executed.
 | 2026-10-01 | mutation check of the proxy test | passed | test fails without `ProxyHandler({})` |
 | 2026-10-01 | `python -m ruff check .` / `ruff format` | passed | ruff 0.16.9 |
 | 2026-10-01 | `python scripts/build_mkp.py` | passed | apprise-0.3.1.mkp |
-| 2026-10-02 | manual HTTPS notification through Checkmk to the maintainer's real Apprise API (internal service, Let's Encrypt certificate) | passed (reported by maintainer) | details not yet recorded: which package version, Basic auth/tag/locked mode, Markdown rendering; a home Checkmk Community Edition instance is also available for tests |
+| 2026-10-02 | manual HTTPS notification through Checkmk to the maintainer's real Apprise API (internal service, Let's Encrypt certificate) | passed (reported by maintainer) | package 0.3.1 (before M3), routing tag only; Basic auth was verified separately against the mock; plain (unformatted) message as expected. Markdown rendering of 0.4.0 still to be checked; a home Checkmk Community Edition instance is also available for tests |
 
 ## Next concrete actions
 
