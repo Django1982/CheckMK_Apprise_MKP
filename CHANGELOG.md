@@ -20,6 +20,7 @@ The project follows Semantic Versioning once release artifacts begin.
 
 ### Fixed
 
+- plain text is now the default message format; Apprise has no Markdown->Text converter, so Markdown showed raw `**` and backslashes on text-only targets such as Signal
 - HTTP 204 (and any 2xx other than 200) was reported as delivered; it now fails with exit 2 because nothing was sent
 - a missing `NOTIFY_NOTIFICATIONTYPE` was silently treated as `PROBLEM`; it is now an invalid event (exit 2)
 - the "TLS verification disabled" warning is only printed for `https://` URLs

@@ -18,7 +18,7 @@
 | M0.2 – Technical Skeleton | done | install/enable/uninstall, method selectable, form validation, save/reload verified on a Checkmk 2.5 site (Python 3.13) |
 | M1 – Notification Core | done (mock-verified) | manual Checkmk runs against the mock for host/service problem, recovery, UNKNOWN, downtime start, flapping start, failure paths, Unicode, log inspection. Manual runs still open: acknowledgement, downtime end, custom, flapping stop, host UP (unit-tested only) |
 | M2 – Native Checkmk UX | done (mock-verified) | `NOTIFY_PARAMETER_*` formats confirmed (bool `True`/`False`, int, empty tag omitted); explicit and password-store passwords sent as Basic auth; wrong password -> HTTP 401/exit 2; GUI hides the password; log shows only parameter names |
-| M3 – Routing & Formatting | done (verified on a real target) | Markdown escaping, bold labels, hard line breaks, `html` removed; tag pass-through, type mapping and content bounds from M1; unit-tested. Real Apprise -> Signal (2026-10-02): escaping is applied as designed, but Signal shows Markdown as raw text (backslashes/asterisks visible). Open decision: default message format (see Open items); no Checkmk deep links (deliberate) |
+| M3 – Routing & Formatting | done (verified on a real target) | Markdown escaping, bold labels, hard line breaks, `html` removed; tag pass-through, type mapping and content bounds from M1; unit-tested. Real Apprise -> Signal (2026-10-02): escaping is applied as designed, but Signal shows Markdown as raw text (backslashes/asterisks visible). Default message format changed to plain text (see Message format finding); no Checkmk deep links (deliberate) |
 | M4 – Hardening | in progress | external review findings applied (see below); HTTPS/TLS manual test pending (maintainer, against a real instance) |
 | M5 – Release Readiness | not started | |
 
@@ -40,6 +40,10 @@ Finish M4: land the classification fixes, then document timeouts/limits and exte
 | `PROJECT_STATUS.md` stale (P3) | Fixed (this file) |
 | CI only Python 3.12 (P3) | CI now runs the unit tests on 3.12 and 3.13 (single `unit-tests` job) |
 
+## Message format finding (2026-10-02)
+
+Real Apprise -> Signal showed raw Markdown. Cause (Apprise sources): the API passes `format` as the input format (`body_format`), and Apprise has no Markdown->Text converter, so text targets get the Markdown unchanged. Plain text input is converted correctly per target. Decision (maintainer + review of the sources): plain text is the default, Markdown is opt-in. Plain text confirmed clean on Signal.
+
 ## Open items
 
 - Real Apprise API (maintainer tests at home): `locked` mode with Basic auth and tag, HTTPS with a real certificate, how Markdown renders on a real target.
@@ -47,7 +51,7 @@ Finish M4: land the classification fixes, then document timeouts/limits and exte
 - Documentation (M5): configure exactly one recipient in the Checkmk rule; "all contacts" calls the script once per contact and would send duplicates. Repeated 424 means: check routing tags and the Apprise configuration.
 - TLS certificate verification failure stays exit 1 (maintainer decision 2026-10-01, to be re-evaluated after the HTTPS test against the maintainer's real Apprise instance).
 
-- Maintainer decision: default message format. Signal (via Apprise) does not render Markdown, so "Plain text" reads better there; Markdown suits targets that render it (Matrix, Discord, mail). Recommendation: default to plain text, Markdown opt-in. To be tested: plain text on Signal.
+- Markdown option on targets that do render it (a Signal URL with `?format=markdown`, Matrix, Discord, mail): not yet tested; escaping backslashes may show on non-CommonMark dialects.
 
 ## Blockers
 

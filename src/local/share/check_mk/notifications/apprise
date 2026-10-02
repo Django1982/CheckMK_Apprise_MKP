@@ -32,7 +32,7 @@ EXIT_OK = 0
 EXIT_TEMPORARY = 1
 EXIT_PERMANENT = 2
 
-USER_AGENT = "checkmk-apprise-notification/0.4"
+USER_AGENT = "checkmk-apprise-notification/0.5"
 SUPPORTED_FORMATS = ("markdown", "text")  # html would need its own escaping; not offered
 CONFIG_ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 TIMEOUT_RANGE = (1, 120)
@@ -148,7 +148,7 @@ def parse_config(env: dict[str, str]) -> Config:
     if not CONFIG_ID_RE.match(config_id):
         raise ConfigError("CONFIG_ID has an invalid format")
 
-    message_format = param("MESSAGE_FORMAT") or "markdown"
+    message_format = param("MESSAGE_FORMAT") or "text"
     if message_format not in SUPPORTED_FORMATS:
         raise ConfigError("MESSAGE_FORMAT is not supported")
 
