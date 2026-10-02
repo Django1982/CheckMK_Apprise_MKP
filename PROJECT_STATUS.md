@@ -4,8 +4,8 @@
 
 ## Current state
 
-- **Active milestone:** M4 – Hardening (closing PR on branch `feat/m4-limits-deadline`), then M5
-- **Overall status:** M0.1 to M3 done and merged to `main` (PR #3 to #11); M4 limits/deadline/troubleshooting implemented on `feat/m4-limits-deadline`, not yet merged
+- **Active milestone:** M5 – Release Readiness (documentation on branch `docs/m5-documentation`)
+- **Overall status:** M0.1 to M3 done and merged to `main` (PR #3 to #11); M4 merged (PR #12, package 0.7.0 verified on the test site); M5 documentation in progress
 - **Last verified milestone:** M3 – Routing & Formatting (Checkmk 2.5 test site, real Apprise 2.0 -> Signal)
 - **Last updated:** 2026-10-02
 - **Updated by:** Claude Code
@@ -19,8 +19,8 @@
 | M1 – Notification Core | done (mock-verified) | manual Checkmk runs against the mock for host/service problem, recovery, UNKNOWN, downtime start, flapping start, failure paths, Unicode, log inspection. Manual runs still open: acknowledgement, downtime end, custom, flapping stop, host UP (unit-tested only) |
 | M2 – Native Checkmk UX | done (mock-verified) | `NOTIFY_PARAMETER_*` formats confirmed (bool `True`/`False`, int, empty tag omitted); explicit and password-store passwords sent as Basic auth; wrong password -> HTTP 401/exit 2; GUI hides the password; log shows only parameter names |
 | M3 – Routing & Formatting | done (verified on a real target) | tag pass-through, type mapping, content bounds, message formats `text` (default) and `html` (rich text; Apprise converts per target, Markdown removed because Apprise cannot convert it to text targets). Real Apprise 2.0 -> Signal: plain text and rich text arrive clean. No Checkmk deep links (deliberate) |
-| M4 – Hardening | implemented, not fully verified | classification matrix, TLS/proxy/redirect handling, total request deadline (covers DNS and slow-drip responses), value size limits, bounded response read, troubleshooting guide; 91 unit tests (mutation-checked deadline tests). Pending: manual run of package 0.7.0 on the test site, optional manual TLS failure test against the real HTTPS instance |
-| M5 – Release Readiness | not started | see Roadmap |
+| M4 – Hardening | done (verified on the test site; HTTPS failure cases against the real instance optional) | classification matrix, TLS/proxy/redirect handling, total request deadline (covers DNS and slow-drip responses), value size limits, bounded response read, troubleshooting guide; 91 unit tests (mutation-checked deadline tests). Package 0.7.0 on the test site: delivery with credentials, rich text on Signal, total deadline (`--delay 15` -> timeout, exit 1, Checkmk retries) verified 2026-10-02 |
+| M5 – Release Readiness | in progress | installation, configuration, compatibility and release checklist documents written; release automation and acceptance on real systems pending (see Roadmap) |
 
 ## Current objective
 
@@ -84,6 +84,7 @@ Record only commands that were actually executed.
 | 2026-10-02 | `python -m unittest discover -s tests/unit` (M4 closing branch) | passed (91 tests, 2 skipped without Apprise; with Apprise 2.0.0 in a local venv all run) | includes deadline, size-limit and large-response tests; deadline tests fail when the deadline is removed (mutation check) |
 | 2026-10-01 | `python -m unittest discover -s tests/unit` (main + this fix branch) | passed (73 tests) | includes `test_hardening.py`; Python 3.10 locally |
 | 2026-10-02 | manual: package 0.6.0, format Rich text, real Apprise 2.0 -> Signal | passed (reported by maintainer) | message arrives as the plain layout, values verbatim, no markup characters |
+| 2026-10-02 | manual: package 0.7.0 on the test site: delivery with Basic auth (rich text, format `html`), `--delay 15` with a shorter timeout -> `temporarily failed: timeout`, Checkmk retries | passed (reported by maintainer) | Signal shows the clean layout |
 | 2026-10-01 | mutation check of the proxy test | passed | test fails without `ProxyHandler({})` |
 | 2026-10-01 | `python -m ruff check .` / `ruff format` | passed | ruff 0.16.9 |
 | 2026-10-01 | `python scripts/build_mkp.py` | passed | apprise-0.3.1.mkp |
@@ -91,8 +92,8 @@ Record only commands that were actually executed.
 
 ## Roadmap (remaining work)
 
-1. **M4 closing PR** (`feat/m4-limits-deadline`): size limits, total deadline, large-response test, `docs/TROUBLESHOOTING.md`. Then a short manual check of package 0.7.0 on the test site.
-2. **M5 documentation:** installation/update/uninstall guide (Setup > Extension packages and `mkp`), configuration guide with Apprise tag examples (including the `locked` access mode), compatibility matrix, release checklist.
+1. ~~M4 closing PR~~ done (PR #12).
+2. **M5 documentation** (this branch): `docs/INSTALLATION.md`, `docs/CONFIGURATION.md`, `docs/COMPATIBILITY.md`, `docs/RELEASE_CHECKLIST.md`, README links. Written; the GUI upload path in the installation guide and `cmk -R` are not yet verified step by step on a fresh site.
 3. **M5 release automation:** tag-triggered workflow that builds the MKP reproducibly and publishes it with a SHA-256 checksum; changelog and version 1.0.0.
 4. **M5 acceptance (maintainer + agent):** clean install on a fresh Checkmk site (Community Edition at home), end-to-end delivery against the real Apprise (locked mode with credentials and tag, HTTPS), then tag v1.0.0. No Checkmk Exchange claims until its submission requirements were checked.
 5. **Backlog (last, not required for 1.0.0):**

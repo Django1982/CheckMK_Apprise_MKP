@@ -18,6 +18,10 @@ The project follows Semantic Versioning once release artifacts begin.
 - M3 message formatting: Markdown escaping of all monitoring values, bold labels and hard line breaks in `markdown` format; `html` removed from the accepted formats
 - M4 start: HTTP/transport classification hardening and tests (`tests/unit/test_hardening.py`); unit tests also run on Python 3.13 in CI
 
+### Documentation
+
+- installation, configuration (Apprise access modes, tag examples), compatibility matrix and release checklist added
+
 ### Fixed
 
 - the request timeout is now a total deadline (including DNS), so slow-drip responses and hanging lookups can no longer exceed it
