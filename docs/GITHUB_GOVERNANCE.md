@@ -61,6 +61,17 @@ Recommended enforcement:
 - **Require signed commits:** optional; enable only if all maintainers/bots can comply without blocking automation
 - **Bypass:** keep minimal; repository admins only for emergency recovery if desired
 
+### Applied configuration (this repository)
+
+The ruleset `Default Rule` targets `main` and is set up for a single maintainer:
+
+- active enforcement, empty bypass list
+- restrict deletions, block force pushes, require linear history
+- pull request required with **0** approvals, stale approvals dismissed, conversation resolution required, merge method **squash only**
+- **code owner review is off** (the only code owner is also the author and cannot approve their own pull request); enable it together with a second maintainer
+- required status checks: `repository-sanity`, `dependency-review`, `unit-tests`; "require branches to be up to date" is off
+- not required: `release-mkp` (it only runs when the build or the release workflow changes)
+
 Baseline required checks once workflows have run at least once:
 
 ```text
