@@ -36,7 +36,21 @@ A missing or unknown tag in `locked` or `public` mode shows up as `HTTP 400` in 
 | Apprise username / password | optional HTTP Basic credentials, set both or neither; prefer a password from the Checkmk password store | `NOTIFY_PARAMETER_USERNAME`, `NOTIFY_PARAMETER_PASSWORD_*` |
 | Message format | **Plain text** (default) or **Rich text** | `NOTIFY_PARAMETER_MESSAGE_FORMAT` |
 | Verify TLS certificate | on by default; disable only in controlled environments | `NOTIFY_PARAMETER_VERIFY_TLS` |
+| CA certificate file (PEM) | optional; for a private CA or a self-signed certificate, see below | `NOTIFY_PARAMETER_CA_FILE` |
 | Request timeout | total time for one request, 1-120 s (default 10) | `NOTIFY_PARAMETER_TIMEOUT` |
+
+### Private CA or self-signed certificate
+
+Publicly trusted certificates (for example Let's Encrypt) need nothing. For a private CA or a self-signed certificate, keep verification **on** and point the rule to the certificate instead:
+
+1. Get the CA certificate (or, for a self-signed server, the server certificate) as a PEM file, for example:
+   ```bash
+   openssl s_client -connect apprise.example.net:443 -servername apprise.example.net </dev/null 2>/dev/null | openssl x509 > ~/etc/apprise-ca.pem
+   ```
+   For a private CA, use the CA's own certificate file instead of the server certificate.
+2. Make sure the site user can read it and enter the path in **CA certificate file (PEM)**, for example `~/etc/apprise-ca.pem` (`~` is the site's home directory).
+
+When set, **only** that file is trusted, not the system certificates. The host name is still checked: the certificate must contain the name or IP address used in the base URL as subject alternative name. Renew the file when the certificate is replaced. An unreadable or invalid file is a configuration error (exit 2).
 
 ### Recipient
 
@@ -93,5 +107,6 @@ The plug-in has no retry queue of its own. Details and remedies: [`TROUBLESHOOTI
 
 - The script never prints the Apprise URL, Config ID, credentials or Apprise's response.
 - Credentials over plain `http://` are allowed but print a warning; use `https://`.
+- Prefer a CA file over switching verification off.
 - The request goes directly to the Apprise server; proxy environment variables are ignored.
 - Stored passwords are resolved with Checkmk's own password-store function at run time.

@@ -25,9 +25,9 @@ The build is reproducible: the same sources always give the same bytes.
 
 ## Install
 
-Either in the GUI: **Setup > Maintenance > Extension packages > Upload package**, then enable it.
+In the GUI (editions with the extension package page): **Setup > Maintenance > Extension packages > Upload package**, then enable it. The Community Edition has no upload page; use the command line there.
 
-Or on the Checkmk server as the site user:
+On the Checkmk server as the site user (all editions):
 
 ```bash
 mkp add apprise-<version>.mkp

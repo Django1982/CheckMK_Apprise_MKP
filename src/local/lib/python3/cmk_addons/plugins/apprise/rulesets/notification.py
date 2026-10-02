@@ -132,6 +132,21 @@ def _parameter_form() -> Dictionary:
                     prefill=DefaultValue(True),
                 ),
             ),
+            "ca_file": DictElement(
+                required=False,
+                parameter_form=String(
+                    title=Title("CA certificate file (PEM)"),
+                    help_text=Help(
+                        "Only for Apprise servers with a private CA or a self-signed "
+                        "certificate. Path of a PEM file on the Checkmk server that the site "
+                        "user can read, for example ~/etc/apprise-ca.pem. When set, only this "
+                        "file is trusted (not the system certificates) and the host name is "
+                        "still checked against the certificate. Leave empty for publicly "
+                        "trusted certificates."
+                    ),
+                    custom_validate=(LengthInRange(max_value=4096),),
+                ),
+            ),
             "timeout": DictElement(
                 required=True,
                 parameter_form=Integer(

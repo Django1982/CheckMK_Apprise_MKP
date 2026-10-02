@@ -34,7 +34,7 @@ EXIT_OK = 0
 EXIT_TEMPORARY = 1
 EXIT_PERMANENT = 2
 
-USER_AGENT = "checkmk-apprise-notification/0.7"
+USER_AGENT = "checkmk-apprise-notification/0.8"
 SUPPORTED_FORMATS = ("text", "html")  # no Markdown: Apprise cannot convert it to text targets
 CONFIG_ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 TIMEOUT_RANGE = (1, 120)
@@ -67,6 +67,7 @@ class Config:
     timeout: int
     username: str = ""
     password: str = field(default="", repr=False)  # never print or log
+    ca_file: str = ""
 
 
 @dataclass(frozen=True)
@@ -144,6 +145,32 @@ def resolve_password(env: dict[str, str]) -> str:
     return ""
 
 
+MAX_CA_FILE_BYTES = 1024 * 1024
+
+
+def validate_ca_file(raw: str) -> str:
+    """Return the expanded path of a PEM file that holds the trusted CA/server certificate."""
+    if not raw:
+        return ""
+    if len(raw) > 4096 or any(ch < " " or ch == "\x7f" for ch in raw):
+        raise ConfigError("CA_FILE is not a valid path")
+    path = os.path.expanduser(raw)
+    if not os.path.isfile(path):
+        raise ConfigError("CA_FILE does not exist or is not a regular file")
+    try:
+        if os.path.getsize(path) > MAX_CA_FILE_BYTES:
+            raise ConfigError("CA_FILE is larger than 1 MiB")
+        ssl.create_default_context(cafile=path)  # must contain at least one valid PEM certificate
+    except PermissionError:
+        raise ConfigError("CA_FILE cannot be read by the site user (check permissions)") from None
+    except ssl.SSLError as error:  # before OSError: SSLError is a subclass of it
+        reason = "".join(ch for ch in str(error.reason or "unknown") if ch.isprintable())[:60]
+        raise ConfigError(f"CA_FILE is not a valid PEM certificate file ({reason})") from None
+    except OSError:
+        raise ConfigError("CA_FILE cannot be read") from None
+    return path
+
+
 def parse_config(env: dict[str, str]) -> Config:
     def param(name: str) -> str:
         return env.get(PARAMETER_PREFIX + name, "").strip()
@@ -185,6 +212,7 @@ def parse_config(env: dict[str, str]) -> Config:
     return Config(
         username=username,
         password=password,
+        ca_file=validate_ca_file(param("CA_FILE")),
         base_url=validate_base_url(param("BASE_URL")),
         config_id=config_id,
         tag=tag,
@@ -350,8 +378,10 @@ def build_url(config: Config) -> str:
     return f"{config.base_url}/notify/{urllib.parse.quote(config.config_id, safe='')}"
 
 
-def build_ssl_context(verify: bool) -> ssl.SSLContext:
-    context = ssl.create_default_context()
+def build_ssl_context(verify: bool, ca_file: str = "") -> ssl.SSLContext:
+    """Default context; with ``ca_file`` only that file is trusted (private CA or pinned
+    self-signed certificate), the host name is still checked against the certificate."""
+    context = ssl.create_default_context(cafile=ca_file or None)
     if not verify:
         context.check_hostname = False
         context.verify_mode = ssl.CERT_NONE
@@ -431,7 +461,8 @@ def send(config: Config, payload: dict[str, str]) -> Result:
     # directly to the configured Apprise server (deterministic, no implicit proxy).
     handlers: list = [urllib.request.ProxyHandler({}), _NoRedirect()]
     if config.base_url.startswith("https://"):
-        handlers.append(urllib.request.HTTPSHandler(context=build_ssl_context(config.verify_tls)))
+        context = build_ssl_context(config.verify_tls, config.ca_file)
+        handlers.append(urllib.request.HTTPSHandler(context=context))
     opener = urllib.request.build_opener(*handlers)
     # The socket timeout only bounds each single operation (a server that sends one byte
     # per second would never trip it) and does not cover DNS lookups. The request therefore

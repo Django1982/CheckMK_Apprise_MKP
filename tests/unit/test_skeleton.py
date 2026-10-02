@@ -85,6 +85,7 @@ class RulesetWiringTest(unittest.TestCase):
             "password",
             "message_format",
             "verify_tls",
+            "ca_file",
             "timeout",
         ):
             self.assertIn(f'"{key}": DictElement(', source)

@@ -20,6 +20,7 @@ The project follows Semantic Versioning once release artifacts begin.
 
 ### Documentation
 
+- optional "CA certificate file (PEM)" with distinct error messages (missing, permissions, not a PEM certificate with the OpenSSL reason) for private CAs and self-signed certificates: only that file is trusted, host name check stays on, invalid files are configuration errors; TLS is now tested with real certificates (needs `openssl`, skipped without)
 - release workflow: a pushed `vX.Y.Z` tag builds the MKP reproducibly (built twice and compared), writes a SHA-256 checksum and publishes a GitHub release; pull requests touching the build run it as a dry run. `scripts/build_mkp.py` now also writes `<mkp>.sha256` and supports `--print-version`
 - installation, configuration (Apprise access modes, tag examples), compatibility matrix and release checklist added
 
