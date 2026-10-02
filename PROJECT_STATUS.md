@@ -5,7 +5,7 @@
 ## Current state
 
 - **Active milestone:** M5 – Release Readiness (acceptance); optional CA file on branch `feat/custom-ca`
-- **Overall status:** M0.1 to M3 done and merged to `main` (PR #3 to #11); M4 merged (PR #12); M5 documentation (PR #13) and release workflow (PR #14) merged; custom CA file in review
+- **Overall status:** M0.1 to M3 done and merged to `main` (PR #3 to #11); M4 merged (PR #12); M5 documentation (PR #13) and release workflow (PR #14) merged; custom CA file merged (PR #15)
 - **Last verified milestone:** M3 – Routing & Formatting (Checkmk 2.5 test site, real Apprise 2.0 -> Signal)
 - **Last updated:** 2026-10-02
 - **Updated by:** Claude Code
@@ -86,7 +86,7 @@ Record only commands that were actually executed.
 | 2026-10-02 | manual: package 0.6.0, format Rich text, real Apprise 2.0 -> Signal | passed (reported by maintainer) | message arrives as the plain layout, values verbatim, no markup characters |
 | 2026-10-02 | manual: package 0.7.0 on the test site: delivery with Basic auth (rich text, format `html`), `--delay 15` with a shorter timeout -> `temporarily failed: timeout`, Checkmk retries | passed (reported by maintainer) | Signal shows the clean layout |
 | 2026-10-02 | manual: CE site, `mkp disable/remove/add/enable` of 0.7.0 (CLI); EE site, GUI upload + enable + rule form; `locked` access with user/password against the real Apprise (library 2.0.0) delivered | passed (reported by maintainer) | install paths and locked mode verified; Apprise library version recorded |
-| 2026-10-02 | manual: package 0.8.0, no CA file -> `TLS certificate verification failed` (exit 1, retried); CA file given -> `CA_FILE could not be loaded as a PEM certificate file` on the site | finding | the same CA file (`DATROOT-CA.pem`, single certificate, CRLF) loads fine and verifies `phpipam.k8.do-dat.int` (`*.k8.do-dat.int`) from the developer machine; the site copy was probably altered (leading whitespace/BOM, wrong file) or unreadable. 0.8.1 reports which case it is |
+| 2026-10-02 | manual: package 0.8.0/0.8.1 against `phpipam.k8.do-dat.int` (internal CA `DAT-RootCA`, certificate `*.k8.do-dat.int`): no CA file -> `TLS certificate verification failed` (exit 1, retried); CA file owned by root -> generic `CA_FILE could not be loaded` (0.8.0; 0.8.1 says `cannot be read by the site user`); readable CA file -> TLS verified, server answered `HTTP 302` -> `permanently failed: redirects are not followed` (exit 2) | passed (reported by maintainer) | private CA option verified; also loads the same file with CRLF line endings from the developer machine |
 | 2026-10-02 | unit tests with real self-signed certificates (openssl): default verification rejects, `ca_file` trusts, other CA rejects, host name still checked, opt-out works | passed locally | CI runs them on ubuntu |
 | 2026-10-01 | mutation check of the proxy test | passed | test fails without `ProxyHandler({})` |
 | 2026-10-01 | `python -m ruff check .` / `ruff format` | passed | ruff 0.16.9 |
@@ -101,7 +101,7 @@ Record only commands that were actually executed.
 4. **M5 acceptance (maintainer + agent):** clean install on a fresh Checkmk site (Community Edition at home), end-to-end delivery against the real Apprise (locked mode with credentials and tag, HTTPS), then tag v1.0.0. No Checkmk Exchange claims until its submission requirements were checked.
 5. **Backlog (last, not required for 1.0.0):**
    - downtime end time in downtime notifications (first capture the `NOTIFY_*` variables of a real downtime-start notification);
-   - ~~optional CA certificate file field~~ implemented on `feat/custom-ca` (maintainer request: self-signed CA solution); manual test with a real self-signed Apprise pending;
+   - ~~optional CA certificate file field~~ implemented on `feat/custom-ca` (maintainer request: self-signed CA solution); verified against an internal CA host (see verification log);
    - optional link back to Checkmk in the message (needs the Checkmk base URL);
    - manual runs of acknowledgement, downtime end, custom, flapping stop, host UP;
    - rich text on a target that renders formatting (Signal with `?format=markdown`, Matrix, Discord, mail);
