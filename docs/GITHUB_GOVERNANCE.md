@@ -71,10 +71,11 @@ dependency-review
 Add later implementation checks such as:
 
 ```text
-lint
 unit-tests
-package-sanity
+release-mkp   (runs only when the build or the release workflow changes)
 ```
+
+`release-mkp` is not a good *required* check because it only runs for some pull requests; require `repository-sanity`, `dependency-review` and `unit-tests`.
 
 GitHub requires status check names to be unambiguous, so job/check names should remain unique across workflows.
 

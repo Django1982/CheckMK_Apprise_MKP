@@ -95,6 +95,34 @@ class RulesetWiringTest(unittest.TestCase):
 
 
 class MkpBuildTest(unittest.TestCase):
+    def test_cli_writes_mkp_and_lf_checksum_file(self):
+        import hashlib
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            proc = subprocess.run(
+                [sys.executable, str(REPO / "scripts/build_mkp.py"), "--output-dir", tmp],
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            (mkp,) = Path(tmp).glob("apprise-*.mkp")
+            checksum = (Path(tmp) / f"{mkp.name}.sha256").read_bytes()
+            digest = hashlib.sha256(mkp.read_bytes()).hexdigest()
+            self.assertEqual(checksum, f"{digest}  {mkp.name}\n".encode())
+            self.assertNotIn(b"\r", checksum)
+
+    def test_print_version(self):
+        builder = _load_builder()
+        proc = subprocess.run(
+            [sys.executable, str(REPO / "scripts/build_mkp.py"), "--print-version"],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        self.assertEqual(proc.stdout.strip(), builder.PACKAGE_VERSION)
+
     def test_build_is_reproducible_and_contains_expected_parts(self):
         builder = _load_builder()
         name, first = builder.build_mkp()

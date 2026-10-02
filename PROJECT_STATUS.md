@@ -94,7 +94,7 @@ Record only commands that were actually executed.
 
 1. ~~M4 closing PR~~ done (PR #12).
 2. **M5 documentation** (this branch): `docs/INSTALLATION.md`, `docs/CONFIGURATION.md`, `docs/COMPATIBILITY.md`, `docs/RELEASE_CHECKLIST.md`, README links. Written; the GUI upload path in the installation guide and `cmk -R` are not yet verified step by step on a fresh site.
-3. **M5 release automation:** tag-triggered workflow that builds the MKP reproducibly and publishes it with a SHA-256 checksum; changelog and version 1.0.0.
+3. **M5 release automation** (branch `ci/release-workflow`): `.github/workflows/release.yml` (tag-triggered, dry run on pull requests that touch the build), checksum file from `scripts/build_mkp.py`. The publishing step only runs for a real tag and is therefore verified with the first tag; version 1.0.0 and the changelog follow with the acceptance.
 4. **M5 acceptance (maintainer + agent):** clean install on a fresh Checkmk site (Community Edition at home), end-to-end delivery against the real Apprise (locked mode with credentials and tag, HTTPS), then tag v1.0.0. No Checkmk Exchange claims until its submission requirements were checked.
 5. **Backlog (last, not required for 1.0.0):**
    - downtime end time in downtime notifications (first capture the `NOTIFY_*` variables of a real downtime-start notification);
