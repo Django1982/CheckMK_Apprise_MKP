@@ -4,7 +4,7 @@
 
 Primary target: **Checkmk 2.5.x**.
 
-The first release uses an external **Apprise API** server through a saved configuration endpoint. Checkmk 2.4 compatibility is not a v1 requirement unless explicitly added after implementation testing.
+The first release uses an external **Apprise API** server through a saved configuration endpoint. The supported Apprise baseline is **Apprise 2.0**; the message formats rely on its format conversion (see "Message format"). Checkmk 2.4 compatibility is not a v1 requirement unless explicitly added after implementation testing.
 
 ## Checkmk extension points
 
@@ -178,7 +178,7 @@ Supported values: `text` (default) and `html` ("Rich text" in the form). `markdo
 How Apprise handles the format (checked in the Apprise sources, with Apprise 2.0.0 locally, and on a real Apprise -> Signal setup): the API passes `format` as the *input* format and Apprise converts it to each target's own format. Its converters are Markdown->HTML, Text->HTML, HTML->Text, HTML->Markdown and Text->Markdown. There is **no Markdown->Text converter**, so Markdown sent to a text target (Signal by default) arrives unchanged with visible `**` and backslashes. That is why Markdown is not offered.
 
 - `text`: plain layout below. Apprise converts it per target (escaping for HTML or Markdown targets).
-- `html` (rich text): the same layout with `<b>` labels and `<br>` line breaks; every monitoring value is escaped with `html.escape`, titles stay plain text. Apprise converts it to plain text for text targets (identical to the `text` layout, covered by a cross-check test when Apprise is installed), to Markdown with bold labels for Markdown targets, and passes HTML to HTML targets. Needs an Apprise version with the HTML->Markdown converter.
+- `html` (rich text): the same layout with `<b>` labels and `<br>` line breaks; every monitoring value is escaped with `html.escape`, titles stay plain text. Apprise converts it to plain text for text targets (identical to the `text` layout, covered by a cross-check test when Apprise is installed), to Markdown with bold labels for Markdown targets, and passes HTML to HTML targets. Requires Apprise 2.0 (the supported baseline; HTML->Markdown conversion).
 
 ### Service notification baseline
 

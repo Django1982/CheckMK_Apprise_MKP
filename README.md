@@ -2,7 +2,7 @@
 
 A planned Checkmk 2.5 notification extension that forwards Checkmk notification events to an Apprise API server and lets Apprise perform the final provider routing.
 
-> Status: project preparation / pre-implementation skeleton.
+> Status: working pre-release (0.x). Notification delivery, authentication and message formatting are implemented and tested against a mock and a real Apprise API; release readiness (M5) is still open. See [`PROJECT_STATUS.md`](PROJECT_STATUS.md).
 
 ## Intended architecture
 
@@ -29,7 +29,18 @@ The Checkmk integration deliberately remains provider-agnostic. Discord, Matrix,
 
 ## Project state
 
-The repository structure, project rules and implementation brief are prepared. The next implementation milestone is **M0.2 – Technical Skeleton**, followed by the notification core.
+Milestones M0.1 to M3 are done; M4 (hardening) is in progress, M5 (release readiness) is next. The current state, open items and verification log are in [`PROJECT_STATUS.md`](PROJECT_STATUS.md).
+
+## Compatibility
+
+| Component | Supported / verified |
+|---|---|
+| Checkmk | 2.5.x (Ruleset API v1); verified on a 2.5 test site, Python 3.13 |
+| Apprise | **2.0** is the supported baseline. The message formats rely on Apprise's own format conversion; rich text needs the HTML to Markdown converter present in Apprise 2.0 |
+| Apprise API | stateful endpoint `POST /notify/{config_id}`; only HTTP 200 counts as delivered |
+| Notification script | Python standard library only, no Apprise package on the Checkmk server |
+
+Message formats: **Plain text** (default) works everywhere. **Rich text** adds bold labels where a target supports formatting and falls back to the same plain text on targets that do not (for example Signal). Markdown is intentionally not offered because Apprise cannot convert it to plain text targets.
 
 Start with:
 

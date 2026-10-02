@@ -108,8 +108,8 @@ def _parameter_form() -> Dictionary:
                         "Apprise converts the message to what each target needs. Plain text "
                         "is the simplest choice. Rich text adds bold labels where a target "
                         "supports formatting and falls back to the same plain text on "
-                        "targets that do not (for example Signal). Requires a recent "
-                        "Apprise (HTML to Markdown conversion)."
+                        "targets that do not (for example Signal). Requires Apprise "
+                        "2.0 or newer."
                     ),
                     elements=[
                         SingleChoiceElement(name="text", title=Title("Plain text")),

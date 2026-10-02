@@ -51,7 +51,7 @@ Real Apprise -> Signal showed raw Markdown. Cause (Apprise sources): the API pas
 - Documentation (M5): configure exactly one recipient in the Checkmk rule; "all contacts" calls the script once per contact and would send duplicates. Repeated 424 means: check routing tags and the Apprise configuration.
 - TLS certificate verification failure stays exit 1 (maintainer decision 2026-10-01, to be re-evaluated after the HTTPS test against the maintainer's real Apprise instance).
 
-- Rich text (`html`) on real targets: Signal (text target), Signal with `?format=markdown`, Matrix/Discord/mail. Verified so far only with Apprise's converters in a local venv (Apprise 2.0.0): HTML -> text equals the plain layout for all fixtures, HTML -> Markdown gives bold labels. The maintainer's Apprise version is not known yet (HTML -> Markdown needs a recent one).
+- Rich text (`html`) on real targets: Signal (text target), Signal with `?format=markdown`, Matrix/Discord/mail. Verified so far only with Apprise's converters in a local venv (Apprise 2.0.0): HTML -> text equals the plain layout for all fixtures, HTML -> Markdown gives bold labels. The maintainer's Apprise is 2.0, which is the supported baseline (documented in README and TECHNICAL_SPEC).
 - Backlog (cosmetic): downtime notifications do not say when the downtime ends. First capture the `NOTIFY_*` variables of a real downtime-start notification (temporary dump) to see whether the end time is available, then add it to the message (M3 polish or M5).
 
 ## Blockers
