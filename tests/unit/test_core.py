@@ -111,7 +111,7 @@ class ConfigParsingTest(unittest.TestCase):
         }
         config = apprise.parse_config(env)
         self.assertEqual(config.base_url, "https://apprise.example.net")
-        self.assertEqual(config.message_format, "markdown")
+        self.assertEqual(config.message_format, "text")
         self.assertTrue(config.verify_tls)
         self.assertEqual(config.timeout, 10)
         self.assertEqual(config.tag, "")
@@ -453,7 +453,7 @@ class PayloadTest(unittest.TestCase):
     def test_payload_fields(self):
         payload = self.payload()
         self.assertEqual(set(payload), {"title", "body", "type", "format"})
-        self.assertEqual((payload["type"], payload["format"]), ("failure", "markdown"))
+        self.assertEqual((payload["type"], payload["format"]), ("failure", "text"))
 
     def test_tag_only_when_configured(self):
         self.assertNotIn("tag", self.payload())
@@ -461,7 +461,7 @@ class PayloadTest(unittest.TestCase):
         self.assertEqual(self.payload(tag="ops,network")["tag"], "ops,network")
 
     def test_format_passthrough(self):
-        self.assertEqual(self.payload(message_format="text")["format"], "text")
+        self.assertEqual(self.payload(message_format="markdown")["format"], "markdown")
 
 
 class UrlAndTlsTest(unittest.TestCase):

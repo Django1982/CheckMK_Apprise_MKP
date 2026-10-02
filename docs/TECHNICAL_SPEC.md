@@ -72,7 +72,7 @@ Field names below are conceptual. The implementation may choose concise stable k
 | Username | conditional | none | HTTP Basic user (`NOTIFY_PARAMETER_USERNAME`); must be set together with the password |
 | Password | conditional | none | Checkmk `Password` form spec (explicit or password store); see "Credentials" below |
 | Routing tag | no | unset | Pass-through Apprise tag expression |
-| Message format | yes | `markdown` | `text`, `markdown`, optionally `html` |
+| Message format | yes | `text` | `text` or `markdown` (`html` is not supported) |
 | Verify TLS | yes | `true` | Secure default |
 | Timeout seconds | yes | `10` proposed | Bound and validate range |
 
@@ -173,9 +173,11 @@ Notification event type must be considered in addition to current state so recov
 
 ## Message format
 
-Supported formats are `markdown` (default) and `text`; `html` is not supported because it would need its own escaping.
+Supported formats are `text` (default) and `markdown`; `html` is not supported because it would need its own escaping.
 
-In `markdown` mode every monitoring value (host, service, output, comment, ...) is escaped (`\ ` * _ [ ] < > ~ | #`, plus list markers at line start), labels are bold and each line ends with two spaces so Markdown keeps the line breaks. Titles are plain text and never escaped. `text` mode uses the layout below unchanged.
+Why plain text is the default (checked in the Apprise sources and on a real Apprise -> Signal setup): the API passes `format` to Apprise as the *input* format, and Apprise converts it to each target's own format. Its converters are Markdown->HTML, Text->HTML, HTML->Text, HTML->Markdown and Text->Markdown; there is **no Markdown->Text** converter, so Markdown sent to a target that expects text (for example Signal, unless its Apprise URL has `?format=markdown`) arrives unchanged, with visible `**` and backslashes. With `text` input Apprise escapes and converts correctly for every target. Choose `markdown` only when all targets in the Apprise configuration render Markdown. Targets with a Markdown-like but not CommonMark dialect (Signal's styled text, ...) may show the escaping backslashes; that is not verified.
+
+In `markdown` mode (opt-in) every monitoring value (host, service, output, comment, ...) is escaped (`\ ` * _ [ ] < > ~ | #`, plus list markers at line start), labels are bold and each line ends with two spaces so Markdown keeps the line breaks. Titles are plain text and never escaped. `text` mode uses the layout below unchanged.
 
 ### Service notification baseline
 
