@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import gzip
+import hashlib
 import io
 import json
 import pprint
@@ -108,12 +109,21 @@ def build_mkp() -> tuple[str, bytes]:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-dir", default=str(REPO_ROOT / "dist"))
+    parser.add_argument(
+        "--print-version", action="store_true", help="print the package version and exit"
+    )
     args = parser.parse_args()
+    if args.print_version:
+        print(PACKAGE_VERSION)
+        return 0
     filename, data = build_mkp()
     out = Path(args.output_dir)
     out.mkdir(parents=True, exist_ok=True)
     (out / filename).write_bytes(data)
-    print(f"Built {out / filename} ({len(data)} bytes)")
+    digest = hashlib.sha256(data).hexdigest()
+    # bytes, not text: the checksum file must use LF on every platform for `sha256sum -c`
+    (out / f"{filename}.sha256").write_bytes(f"{digest}  {filename}\n".encode())
+    print(f"Built {out / filename} ({len(data)} bytes, sha256 {digest})")
     return 0
 
 
