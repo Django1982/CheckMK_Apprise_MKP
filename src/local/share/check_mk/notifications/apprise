@@ -148,13 +148,29 @@ def resolve_password(env: dict[str, str]) -> str:
 MAX_CA_FILE_BYTES = 1024 * 1024
 
 
-def validate_ca_file(raw: str) -> str:
-    """Return the expanded path of a PEM file that holds the trusted CA/server certificate."""
+def site_root(env: dict[str, str]) -> str:
+    """The Checkmk site directory, as exported to notification scripts."""
+    return env.get("NOTIFY_OMD_ROOT") or env.get("OMD_ROOT") or ""
+
+
+def validate_ca_file(raw: str, root: str) -> str:
+    """Return the real path of a PEM file that holds the trusted CA/server certificate.
+
+    The file must lie inside the Checkmk site directory (symbolic links are resolved first):
+    the plug-in never reads files outside the site, as Checkmk Exchange extensions must not.
+    """
     if not raw:
         return ""
     if len(raw) > 4096 or any(ch < " " or ch == "\x7f" for ch in raw):
         raise ConfigError("CA_FILE is not a valid path")
     path = os.path.expanduser(raw)
+    if not os.path.isabs(path):
+        raise ConfigError("CA_FILE must be an absolute path or start with ~/")
+    if not root:
+        raise ConfigError("CA_FILE needs the Checkmk site environment (OMD_ROOT)")
+    path, root = os.path.realpath(path), os.path.realpath(root)
+    if os.path.commonpath([path, root]) != root:
+        raise ConfigError("CA_FILE must be inside the Checkmk site directory")
     if not os.path.isfile(path):
         raise ConfigError("CA_FILE does not exist or is not a regular file")
     try:
@@ -212,7 +228,7 @@ def parse_config(env: dict[str, str]) -> Config:
     return Config(
         username=username,
         password=password,
-        ca_file=validate_ca_file(param("CA_FILE")),
+        ca_file=validate_ca_file(param("CA_FILE"), site_root(env)),
         base_url=validate_base_url(param("BASE_URL")),
         config_id=config_id,
         tag=tag,

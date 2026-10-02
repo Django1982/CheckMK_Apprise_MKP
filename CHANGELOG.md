@@ -6,9 +6,20 @@ The project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-02
+
+Distribution hardening before a possible Checkmk Exchange submission; no feature changes.
+
 ### Changed
 
-- development tools are pinned in `requirements-dev.txt` (ruff 0.16.9; Apprise 2.0.0 as a test-only reference) and kept current by Dependabot; CI and the release workflow install them, so the cross-check tests against Apprise's format converters now run in CI. No runtime dependency was added
+- the optional CA certificate file must lie **inside the Checkmk site directory** (symbolic links are resolved first, relative paths are refused). The Exchange rules reject extensions that read outside the site directory. A rule that points to a file outside the site (for example `/etc/...`) now fails with exit 2 and the message `CA_FILE must be inside the Checkmk site directory`; copy the file to `~/etc/` and update the rule
+- the package manifest states `version.usable_until = 2.5.99` (the supported range is Checkmk 2.5.x) and the project URL as `download_url`
+- development tools are pinned in `requirements-dev.txt` (ruff 0.16.9; Apprise 2.0.0 as a test-only reference) and kept current by Dependabot; CI and the release workflow install them, so the cross-check tests against Apprise's format converters run in CI. No runtime dependency was added
+
+### Documentation
+
+- README and `SECURITY.md` describe the released state (supported versions, reporting)
+- delivery on the Community Edition was verified after the 1.0.0 release (see `docs/COMPATIBILITY.md`); the 1.0.0 notes below list it as not verified because it had not been run at tagging time
 
 ## [1.0.0] - 2026-10-02
 

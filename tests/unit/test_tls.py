@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0-only
 """TLS tests with real certificates: default verification, private CA file, opt-out."""
 
+import os
 import shutil
 import subprocess
 import tempfile
@@ -49,13 +50,18 @@ class SelfSignedTlsTest(unittest.TestCase):
         cls.dir = Path(cls._tmp.name)
         cls.cert, cls.key = make_certificate(cls.dir, "server")
         cls.other_cert, _ = make_certificate(cls.dir, "other")
+        cls.site = {"NOTIFY_OMD_ROOT": str(cls.dir)}  # the temporary directory acts as the site
 
     @classmethod
     def tearDownClass(cls):
         cls._tmp.cleanup()
 
     def deliver(self, server: MockApprise, **params: str):
-        env = {**fixture("service_critical"), **parameters(base_url=server.url, **params)}
+        env = {
+            **fixture("service_critical"),
+            **parameters(base_url=server.url, **params),
+            **self.site,
+        }
         return run_main(env)
 
     def test_default_verification_rejects_a_self_signed_certificate(self):
@@ -86,6 +92,7 @@ class SelfSignedTlsTest(unittest.TestCase):
                 {
                     **fixture("service_critical"),
                     **parameters(base_url=url, ca_file=self.cert),
+                    **self.site,
                 }
             )
         self.assertEqual(code, 1)
@@ -99,14 +106,15 @@ class SelfSignedTlsTest(unittest.TestCase):
 
     def test_tilde_in_the_path_is_expanded(self):
         with mock_home(self.dir):
-            config = apprise.parse_config(parameters(ca_file="~/server.pem"))
-        self.assertEqual(Path(config.ca_file), self.dir / "server.pem")
+            config = apprise.parse_config({**parameters(ca_file="~/server.pem"), **self.site})
+        self.assertEqual(Path(config.ca_file), Path(os.path.realpath(self.dir / "server.pem")))
 
     def test_ca_file_with_windows_line_endings_is_accepted(self):
         pem = Path(self.cert).read_bytes().replace(b"\r\n", b"\n").replace(b"\n", b"\r\n")
         crlf = self.dir / "crlf.pem"
         crlf.write_bytes(pem)
-        self.assertEqual(apprise.parse_config(parameters(ca_file=str(crlf))).ca_file, str(crlf))
+        config = apprise.parse_config({**parameters(ca_file=str(crlf)), **self.site})
+        self.assertEqual(Path(config.ca_file), Path(os.path.realpath(crlf)))
 
     def test_error_messages_tell_the_causes_apart(self):
         pem = Path(self.cert).read_text(encoding="utf-8")
@@ -119,11 +127,73 @@ class SelfSignedTlsTest(unittest.TestCase):
             path.write_text(content, encoding="utf-8")
             with self.subTest(name):
                 with self.assertRaises(apprise.ConfigError) as ctx:
-                    apprise.validate_ca_file(str(path))
+                    apprise.validate_ca_file(str(path), str(self.dir))
                 self.assertIn("not a valid PEM certificate file", str(ctx.exception))
         with self.assertRaises(apprise.ConfigError) as ctx:
-            apprise.validate_ca_file(str(self.dir / "absent.pem"))
+            apprise.validate_ca_file(str(self.dir / "absent.pem"), str(self.dir))
         self.assertIn("does not exist", str(ctx.exception))
+
+    def test_ca_file_outside_the_site_directory_is_rejected(self):
+        with tempfile.TemporaryDirectory() as other:
+            outside, _ = make_certificate(Path(other), "outside")
+            site = self.dir / "mysite"
+            site.mkdir(exist_ok=True)
+            cases = {
+                "other directory": outside,
+                "parent directory via ..": str(site / ".." / "server.pem"),
+            }
+            for name, path in cases.items():
+                with self.subTest(name):
+                    with self.assertRaises(apprise.ConfigError) as ctx:
+                        apprise.validate_ca_file(path, str(site))
+                    self.assertIn("inside the Checkmk site directory", str(ctx.exception))
+                    self.assertNotIn(other, str(ctx.exception))
+
+    def test_symlink_pointing_out_of_the_site_is_rejected(self):
+        with tempfile.TemporaryDirectory() as other:
+            outside, _ = make_certificate(Path(other), "outside")
+            site = self.dir / "linksite"
+            site.mkdir(exist_ok=True)
+            link = site / "ca.pem"
+            try:
+                link.symlink_to(outside)
+            except (OSError, NotImplementedError):
+                self.skipTest("symbolic links are not available here")
+            with self.assertRaises(apprise.ConfigError):
+                apprise.validate_ca_file(str(link), str(site))
+
+    def test_symlink_inside_the_site_is_accepted(self):
+        site = self.dir / "innersite"
+        site.mkdir(exist_ok=True)
+        link = site / "ca.pem"
+        try:
+            link.symlink_to(self.cert)
+        except (OSError, NotImplementedError):
+            self.skipTest("symbolic links are not available here")
+        # self.cert lies in self.dir, which is the parent of this site: outside, so rejected
+        with self.assertRaises(apprise.ConfigError):
+            apprise.validate_ca_file(str(link), str(site))
+        inner_target = site / "real.pem"
+        inner_target.write_bytes(Path(self.cert).read_bytes())
+        inner_link = site / "alias.pem"
+        inner_link.symlink_to(inner_target)
+        self.assertEqual(
+            Path(apprise.validate_ca_file(str(inner_link), str(site))),
+            Path(os.path.realpath(inner_target)),
+        )
+
+    def test_relative_paths_and_a_missing_site_environment_are_rejected(self):
+        with self.assertRaises(apprise.ConfigError) as ctx:
+            apprise.validate_ca_file("etc/ca.pem", str(self.dir))
+        self.assertIn("absolute path", str(ctx.exception))
+        with self.assertRaises(apprise.ConfigError) as ctx:
+            apprise.validate_ca_file(self.cert, "")
+        self.assertIn("site environment", str(ctx.exception))
+
+    def test_the_plugin_reads_the_site_root_from_the_notification_environment(self):
+        self.assertEqual(apprise.site_root({"NOTIFY_OMD_ROOT": "/omd/sites/x"}), "/omd/sites/x")
+        self.assertEqual(apprise.site_root({"OMD_ROOT": "/omd/sites/y"}), "/omd/sites/y")
+        self.assertEqual(apprise.site_root({}), "")
 
     def test_invalid_ca_files_are_permanent_configuration_errors(self):
         empty = self.dir / "empty.pem"
@@ -138,7 +208,7 @@ class SelfSignedTlsTest(unittest.TestCase):
             "control character": "bad\npath.pem",
         }.items():
             with self.subTest(name):
-                env = {**fixture("service_critical"), **parameters(ca_file=path)}
+                env = {**fixture("service_critical"), **parameters(ca_file=path), **self.site}
                 code, out = run_main(env)
                 self.assertEqual(code, 2)
                 self.assertIn("CA_FILE", out)

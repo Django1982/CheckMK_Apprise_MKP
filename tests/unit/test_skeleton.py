@@ -114,6 +114,17 @@ class MkpBuildTest(unittest.TestCase):
             self.assertEqual(checksum, f"{digest}  {mkp.name}\n".encode())
             self.assertNotIn(b"\r", checksum)
 
+    def test_manifest_states_the_supported_checkmk_range_and_project_url(self):
+        builder = _load_builder()
+        _, data = builder.build_mkp()
+        outer = tarfile.open(fileobj=io.BytesIO(gzip.decompress(data)))
+        manifest = json.load(outer.extractfile("info.json"))
+        self.assertEqual(manifest["version.min_required"], "2.5.0")
+        self.assertEqual(manifest["version.usable_until"], "2.5.99")
+        self.assertEqual(
+            manifest["download_url"], "https://github.com/Django1982/CheckMK_Apprise_MKP"
+        )
+
     def test_print_version(self):
         builder = _load_builder()
         proc = subprocess.run(

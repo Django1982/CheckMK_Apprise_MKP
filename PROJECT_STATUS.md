@@ -93,7 +93,7 @@ Record only commands that were actually executed.
 | 2026-10-02 | manual: package 0.7.0: delivery with Basic auth (rich text), `--delay 15` with a shorter timeout | passed (reported by maintainer) | `temporarily failed: timeout`, Checkmk retries |
 | 2026-10-02 | unit tests with real self-signed certificates (openssl) | passed | default verification rejects, `ca_file` trusts, other CA rejects, host name still checked, opt-out works; CI runs them on ubuntu |
 | 2026-10-02 | manual: CE site CLI install; EE site GUI upload; `locked` access with user/password against the real Apprise (library 2.0.0) | passed (reported by maintainer) | install paths and locked mode verified |
-| 2026-10-02 | manual: package 0.8.0/0.8.1 against `phpipam.k8.do-dat.int` (internal CA, `*.k8.do-dat.int`) | passed (reported by maintainer) | no CA file -> certificate verification failed (exit 1); CA file owned by root -> generic error in 0.8.0, `cannot be read by the site user` since 0.8.1; readable CA file -> TLS verified, server answered `HTTP 302` -> exit 2 |
+| 2026-10-02 | manual: package 0.8.0/0.8.1 against an internal HTTPS service (private CA, wildcard certificate) | passed (reported by maintainer) | no CA file -> certificate verification failed (exit 1); CA file owned by root -> generic error in 0.8.0, `cannot be read by the site user` since 0.8.1; readable CA file -> TLS verified, server answered `HTTP 302` -> exit 2 |
 | 2026-10-02 | manual: `scripts/notify_env_dump.py` on the test site for a host downtime start | passed (reported by maintainer) | no end-time variable; the comment already contains the author; a copy owned by root broke `cmk -R` (documented in `docs/INSTALLATION.md`); script and rule removed afterwards |
 | 2026-10-02 | `python -m unittest discover -s tests/unit`, `python -m ruff check .` at v1.0.0 | passed (109 tests, 2 skipped without Apprise; with Apprise 2.0.0 in a local venv all run) | CI on Python 3.12 and 3.13 |
 | 2026-10-02 | release workflow on tag `v1.0.0` | passed | published MKP + checksum; checksum equals a local rebuild from the tag |
@@ -101,11 +101,15 @@ Record only commands that were actually executed.
 | 2026-10-02 | clean virtual environment from `requirements-dev.txt` (ruff 0.16.9, apprise 2.0.0): `ruff check .`, all unit tests | passed (109 tests, none skipped) | the pinned set is what CI installs |
 | 2026-10-02 | branch ruleset on `main` activated; test pull request #21 | passed | required checks `repository-sanity`, `dependency-review`, `unit-tests` listed for the PR, squash merge worked; active rules read back via the GitHub API |
 
+## Release 1.0.1 (prepared)
+
+Distribution hardening after an external review (2026-10-02): CA file restricted to the site directory, `version.usable_until = 2.5.99`, `download_url`, README/SECURITY wording, changelog note about the Community Edition test. The tag `v1.0.1` is set by the maintainer. Exchange: not submitted; risks listed in `docs/COMPATIBILITY.md` (password-store call, which is not a documented API). Internal host names are no longer written into the repository (one earlier mention remains in the git history; `main` is protected against rewrites).
+
 ## Backlog (optional, not required)
 
 - Optional link back to Checkmk in the message: `NOTIFY_HOSTURL` is relative (`/check_mk/index.py?...`), so a field for the Checkmk base URL would be required.
 - Downtime end time: closed, Checkmk passes no end time to notification scripts (a Livestatus query could add it; not planned). The expected duration can go into the downtime comment.
-- Checkmk Exchange: not claimed; would need a check against its current submission requirements first.
+- Checkmk Exchange: not submitted. Decide on the password-store question first (keep the undocumented `extract` call and explain it, or limit the password-store option until a documented API covers notifications).
 
 ## Handoff notes
 
