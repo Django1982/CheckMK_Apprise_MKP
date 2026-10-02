@@ -48,7 +48,7 @@ Publicly trusted certificates (for example Let's Encrypt) need nothing. For a pr
    openssl s_client -connect apprise.example.net:443 -servername apprise.example.net </dev/null 2>/dev/null | openssl x509 > ~/etc/apprise-ca.pem
    ```
    For a private CA, use the CA's own certificate file instead of the server certificate.
-2. Make sure the site user can read it and enter the path in **CA certificate file (PEM)**, for example `~/etc/apprise-ca.pem` (`~` is the site's home directory).
+2. Make sure the site user owns and can read it and enter the path in **CA certificate file (PEM)**, for example `~/etc/apprise-ca.pem` (`~` is the site's home directory). The file must lie **inside the site directory** (symbolic links are resolved first; a link pointing out of the site is rejected), because the plug-in does not read files outside the site.
 
 When set, **only** that file is trusted, not the system certificates. The host name is still checked: the certificate must contain the name or IP address used in the base URL as subject alternative name. Renew the file when the certificate is replaced. An unreadable or invalid file is a configuration error (exit 2).
 

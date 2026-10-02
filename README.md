@@ -1,6 +1,6 @@
 # Checkmk Apprise Notification Extension
 
-A planned Checkmk 2.5 notification extension that forwards Checkmk notification events to an Apprise API server and lets Apprise perform the final provider routing.
+A Checkmk 2.5 notification extension that forwards Checkmk notification events to an Apprise API server and lets Apprise perform the final provider routing.
 
 > Status: release 1.0.0. Verified on a Checkmk 2.5 test site and against a real Apprise 2.0 (see [`docs/COMPATIBILITY.md`](docs/COMPATIBILITY.md) for exactly what was run). Project state: [`PROJECT_STATUS.md`](PROJECT_STATUS.md).
 
@@ -63,4 +63,4 @@ Start with:
 
 ## License
 
-This Checkmk extension is planned as **GPL-2.0-only**. See [`docs/LICENSING.md`](docs/LICENSING.md) for the reason this differs from the initially considered AGPLv3 license.
+This Checkmk extension is licensed under **GPL-2.0-only**. See [`docs/LICENSING.md`](docs/LICENSING.md) for the reason this differs from the initially considered AGPLv3 license.

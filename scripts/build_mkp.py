@@ -23,7 +23,10 @@ import tarfile
 from pathlib import Path
 
 PACKAGE_NAME = "apprise"
-PACKAGE_VERSION = "1.0.0"  # SemVer
+PACKAGE_VERSION = "1.0.1"  # SemVer
+# Highest Checkmk version this release claims to work with (see docs/COMPATIBILITY.md)
+USABLE_UNTIL = "2.5.99"
+PROJECT_URL = "https://github.com/Django1982/CheckMK_Apprise_MKP"
 MIN_CHECKMK = "2.5.0"
 # TODO(M0.2 smoke test): confirm the accepted value for version.packaged on a real 2.5 site.
 PACKAGED_WITH = "2.5.0"
@@ -75,9 +78,9 @@ def build_manifest(parts: dict[str, list[str]]) -> dict:
         "version": PACKAGE_VERSION,
         "version.packaged": PACKAGED_WITH,
         "version.min_required": MIN_CHECKMK,
-        "version.usable_until": None,
+        "version.usable_until": USABLE_UNTIL,
         "author": "Daniel Heinen",
-        "download_url": "",
+        "download_url": PROJECT_URL,
         "files": parts,
     }
 

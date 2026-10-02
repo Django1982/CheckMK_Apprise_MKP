@@ -138,9 +138,10 @@ def _parameter_form() -> Dictionary:
                     title=Title("CA certificate file (PEM)"),
                     help_text=Help(
                         "Only for Apprise servers with a private CA or a self-signed "
-                        "certificate. Path of a PEM file on the Checkmk server that the site "
-                        "user can read, for example ~/etc/apprise-ca.pem. When set, only this "
-                        "file is trusted (not the system certificates) and the host name is "
+                        "certificate. Path of a PEM file inside the Checkmk site directory "
+                        "that the site user can read, for example ~/etc/apprise-ca.pem. When "
+                        "set, only this file is trusted (not the system certificates) and the "
+                        "host name is "
                         "still checked against the certificate. Leave empty for publicly "
                         "trusted certificates."
                     ),
