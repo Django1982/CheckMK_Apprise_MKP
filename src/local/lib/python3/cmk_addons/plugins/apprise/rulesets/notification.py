@@ -21,7 +21,12 @@ from cmk.rulesets.v1.form_specs import (
     SingleChoiceElement,
     String,
 )
-from cmk.rulesets.v1.form_specs.validators import MatchRegex, NumberInRange, ValidationError
+from cmk.rulesets.v1.form_specs.validators import (
+    LengthInRange,
+    MatchRegex,
+    NumberInRange,
+    ValidationError,
+)
 from cmk.rulesets.v1.rule_specs import NotificationParameters, Topic
 
 
@@ -73,6 +78,7 @@ def _parameter_form() -> Dictionary:
                 required=False,
                 parameter_form=String(
                     title=Title("Routing tag expression"),
+                    custom_validate=(LengthInRange(max_value=200),),
                     help_text=Help(
                         "Optional Apprise tag expression passed through unchanged, omitted "
                         "when empty. Apprise configurations in access mode 'locked' or "
@@ -130,6 +136,10 @@ def _parameter_form() -> Dictionary:
                 required=True,
                 parameter_form=Integer(
                     title=Title("Request timeout"),
+                    help_text=Help(
+                        "Total time allowed for one request (connect, send and response). "
+                        "On timeout Checkmk retries later."
+                    ),
                     unit_symbol="s",
                     prefill=DefaultValue(10),
                     custom_validate=(NumberInRange(min_value=1, max_value=120),),
