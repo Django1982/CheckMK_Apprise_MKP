@@ -91,6 +91,8 @@ Site: prod
 Notification: PROBLEM
 ```
 
+Notes from real Checkmk 2.5 events: downtime comments already start with `Author (name): ...`, so the author is not appended again; Checkmk does not pass the end of a downtime to notification scripts, so put the expected duration in the downtime comment if you want it in the message.
+
 Recoveries are titled `RECOVERY: ... (OK)`, other events `ACKNOWLEDGEMENT`, `DOWNTIME START`, `DOWNTIME END`, `DOWNTIME CANCELLED`, `FLAPPING START/STOP/DISABLED`, `CUSTOM`. The Apprise message type follows the event: recovery `success`, WARN and UNKNOWN `warning`, CRIT and DOWN `failure`, acknowledgement/downtime/custom `info`, downtime cancelled and flapping start `warning`.
 
 ## 5. Failures and retries
