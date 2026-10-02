@@ -103,13 +103,13 @@ Record only commands that were actually executed.
 
 ## Release 1.0.1 (prepared)
 
-Distribution hardening after an external review (2026-10-02): CA file restricted to the site directory, `version.usable_until = 2.5.99`, `download_url`, README/SECURITY wording, changelog note about the Community Edition test. The tag `v1.0.1` is set by the maintainer. Exchange: not submitted; risks listed in `docs/COMPATIBILITY.md` (password-store call, which is not a documented API). Internal host names are no longer written into the repository (one earlier mention remains in the git history; `main` is protected against rewrites).
+Distribution hardening after an external review (2026-10-02): CA file restricted to the site directory, `version.usable_until = 2.5.99`, `download_url`, README/SECURITY wording, changelog note about the Community Edition test. The tag `v1.0.1` is set by the maintainer (not yet set when this was written). GitHub Private Vulnerability Reporting is enabled (maintainer, 2026-10-02), as `SECURITY.md` says. Exchange: not submitted; risks listed in `docs/COMPATIBILITY.md` (password-store call, which is not a documented API). Internal host names are no longer written into the repository (one earlier mention remains in the git history; `main` is protected against rewrites).
 
 ## Backlog (optional, not required)
 
 - Optional link back to Checkmk in the message: `NOTIFY_HOSTURL` is relative (`/check_mk/index.py?...`), so a field for the Checkmk base URL would be required.
 - Downtime end time: closed, Checkmk passes no end time to notification scripts (a Livestatus query could add it; not planned). The expected duration can go into the downtime comment.
-- Checkmk Exchange: not submitted. Decide on the password-store question first (keep the undocumented `extract` call and explain it, or limit the password-store option until a documented API covers notifications).
+- Checkmk Exchange: not submitted. Decision (maintainer, 2026-10-02): keep the password-store call as it is, because Checkmk's own notification plug-ins use the same function; if a reviewer objects, explain it with the reasoning in `docs/COMPATIBILITY.md` or limit the option to explicit passwords until a documented API covers notifications.
 
 ## Handoff notes
 
