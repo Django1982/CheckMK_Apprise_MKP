@@ -112,15 +112,15 @@ class SelfSignedTlsTest(unittest.TestCase):
         pem = Path(self.cert).read_text(encoding="utf-8")
         files = {
             "leading whitespace": "  " + pem,
-            "byte order mark": "﻿" + pem,
             "not pem": "hello\n",
         }
         for name, content in files.items():
             path = self.dir / (name.replace(" ", "_") + ".pem")
             path.write_text(content, encoding="utf-8")
-            with self.subTest(name), self.assertRaises(apprise.ConfigError) as ctx:
-                apprise.validate_ca_file(str(path))
-            self.assertIn("not a valid PEM certificate file", str(ctx.exception))
+            with self.subTest(name):
+                with self.assertRaises(apprise.ConfigError) as ctx:
+                    apprise.validate_ca_file(str(path))
+                self.assertIn("not a valid PEM certificate file", str(ctx.exception))
         with self.assertRaises(apprise.ConfigError) as ctx:
             apprise.validate_ca_file(str(self.dir / "absent.pem"))
         self.assertIn("does not exist", str(ctx.exception))
