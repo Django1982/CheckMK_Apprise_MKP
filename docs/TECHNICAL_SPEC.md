@@ -225,6 +225,12 @@ Preferred v1 characteristics:
 - no shelling out to `curl`
 - no global monkey-patching of SSL behavior
 
+## Timeouts and size limits
+
+- The configured timeout (1-120 s, default 10) is a **total deadline** for one request: DNS lookup, connect, send and response. The request runs in a daemon thread and the script gives up after the deadline (exit 1), so a server that answers one byte at a time or a hanging DNS lookup cannot block Checkmk's notification process. The socket timeout is set to the same value.
+- Response bodies are read for at most 4 KiB and never logged or printed.
+- Values from Checkmk are cleaned of control characters and limited: identifiers (host, service, address, site, state, type, author) 255 characters, comment 1000, output 1500, long output 2000, routing tag 200. The worst-case body is about 6 KiB; the Apprise API accepts request bodies up to 3 MiB by default. Targets with smaller message limits are handled by Apprise (overflow option of the target URL).
+
 ## Logging
 
 The notification script's stdout is consumed/logged by Checkmk. Keep messages short and operationally useful.

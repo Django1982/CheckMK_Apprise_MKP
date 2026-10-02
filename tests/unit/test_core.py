@@ -442,7 +442,7 @@ class MessageTest(unittest.TestCase):
     def test_output_is_bounded(self):
         env = {**fixture("service_critical"), "NOTIFY_SERVICEOUTPUT": "x" * 100000}
         ev = apprise.parse_event(env)
-        self.assertLessEqual(len(ev.output), apprise.MAX_LONG_OUTPUT_CHARS)
+        self.assertLessEqual(len(ev.output), apprise.MAX_OUTPUT_CHARS)
 
 
 class PayloadTest(unittest.TestCase):

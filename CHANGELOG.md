@@ -20,6 +20,8 @@ The project follows Semantic Versioning once release artifacts begin.
 
 ### Fixed
 
+- the request timeout is now a total deadline (including DNS), so slow-drip responses and hanging lookups can no longer exceed it
+- value size limits tightened (output 1500, long output 2000, comment 1000, identifiers 255, tag 200) and tested for the worst case; added `docs/TROUBLESHOOTING.md`
 - message format: `markdown` is replaced by `html` (shown as "Rich text"); Apprise converts HTML to plain text, Markdown or HTML per target, whereas it cannot convert Markdown to plain text. Our own Markdown escaping is removed. Rules saved with the unreleased `markdown` value must be set to plain text or rich text again
 - plain text is now the default message format; Apprise has no Markdown->Text converter, so Markdown showed raw `**` and backslashes on text-only targets such as Signal
 - HTTP 204 (and any 2xx other than 200) was reported as delivered; it now fails with exit 2 because nothing was sent
