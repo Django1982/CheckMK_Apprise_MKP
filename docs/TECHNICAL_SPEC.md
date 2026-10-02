@@ -74,6 +74,7 @@ Field names below are conceptual. The implementation may choose concise stable k
 | Routing tag | no | unset | Pass-through Apprise tag expression |
 | Message format | yes | `text` | `text` or `html` (rich text); `markdown` is not supported |
 | Verify TLS | yes | `true` | Secure default |
+| CA certificate file | no | unset | PEM file for a private CA or self-signed server certificate; when set only that file is trusted, host name check stays on (`NOTIFY_PARAMETER_CA_FILE`) |
 | Timeout seconds | yes | `10` proposed | Bound and validate range |
 
 Secrets must use a Checkmk password-store capable field/API where applicable.

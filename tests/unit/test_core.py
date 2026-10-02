@@ -46,7 +46,13 @@ def event(name: str) -> "apprise.Event":
 class MockApprise:
     """Local HTTP server that records requests and answers with a fixed status."""
 
-    def __init__(self, status: int = 200, delay: float = 0, location: str = ""):
+    def __init__(
+        self,
+        status: int = 200,
+        delay: float = 0,
+        location: str = "",
+        tls: tuple[str, str] | None = None,
+    ):
         outer = self
         self.requests: list[dict] = []
 
@@ -83,7 +89,13 @@ class MockApprise:
 
         self.server = QuietServer(("127.0.0.1", 0), Handler)
         self.server.daemon_threads = True
-        self.url = f"http://127.0.0.1:{self.server.server_address[1]}"
+        scheme = "http"
+        if tls:
+            context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+            context.load_cert_chain(*tls)
+            self.server.socket = context.wrap_socket(self.server.socket, server_side=True)
+            scheme = "https"
+        self.url = f"{scheme}://127.0.0.1:{self.server.server_address[1]}"
         threading.Thread(
             target=self.server.serve_forever, kwargs={"poll_interval": 0.02}, daemon=True
         ).start()
