@@ -45,6 +45,15 @@ Installed files:
 
 Then create the notification rule, see [`CONFIGURATION.md`](CONFIGURATION.md).
 
+## Files you place by hand
+
+`mkp add` creates the package files with the right owner. Files you copy into `~/local/` yourself (for example a CA certificate for the rule, or a diagnostic script) must belong to the **site user** and be readable by it. A file copied as `root` breaks `cmk -R` with `Permission denied` for notification scripts and makes the plug-in report `CA_FILE cannot be read by the site user`. Copy as the site user (`omd su SITE`) or fix it:
+
+```bash
+chown SITE:SITE ~/local/share/check_mk/notifications/FILE
+chmod 755 ~/local/share/check_mk/notifications/FILE     # scripts; certificates: 644
+```
+
 ## Update
 
 ```bash

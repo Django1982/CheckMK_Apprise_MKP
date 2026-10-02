@@ -417,6 +417,19 @@ class MessageTest(unittest.TestCase):
         )
         self.assertIn("Comment: Working on it (cmkadmin)", apprise.build_body(ev))
 
+    def test_real_downtime_start_event_does_not_repeat_the_author(self):
+        # variables as dumped from a real Checkmk 2.5 downtime start (host, with comment)
+        ev = event("host_downtime_start")
+        self.assertEqual(apprise.build_title(ev), "DOWNTIME START: www.google.de (UP)")
+        self.assertEqual(apprise.map_type(ev), "info")
+        body = apprise.build_body(ev)
+        self.assertIn("Comment: Author (cmkadmin): 2H Downtime\n", body + "\n")
+        self.assertEqual(body.count("cmkadmin"), 1)
+
+    def test_author_is_appended_when_the_comment_lacks_it(self):
+        ev = event("service_ack")
+        self.assertIn("Comment: Working on it (cmkadmin)", apprise.build_body(ev))
+
     def test_other_event_titles(self):
         self.assertTrue(
             apprise.build_title(event("service_downtime_start")).startswith("DOWNTIME START: ")

@@ -1,0 +1,11 @@
+{
+  "NOTIFY_HOSTADDRESS": "142.251.14.94",
+  "NOTIFY_HOSTNAME": "www.google.de",
+  "NOTIFY_HOSTOUTPUT": "Packet received via smart PING",
+  "NOTIFY_HOSTSTATE": "UP",
+  "NOTIFY_NOTIFICATIONAUTHOR": "cmkadmin",
+  "NOTIFY_NOTIFICATIONCOMMENT": "Author (cmkadmin): 2H Downtime",
+  "NOTIFY_NOTIFICATIONTYPE": "DOWNTIMESTART",
+  "NOTIFY_OMD_SITE": "dev",
+  "NOTIFY_WHAT": "HOST"
+}

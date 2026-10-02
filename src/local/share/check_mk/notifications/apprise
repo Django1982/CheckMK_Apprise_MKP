@@ -347,7 +347,9 @@ def build_body(event: Event, message_format: str = "text") -> str:
     if event.long_output and event.long_output != event.output:
         status.append(("Details", "\n" + event.long_output))
     if event.comment:
-        author = f" ({event.author})" if event.author else ""
+        # Downtime comments already start with "Author (name): ..."; don't repeat the author
+        add_author = event.author and event.author not in event.comment
+        author = f" ({event.author})" if add_author else ""
         status.append(("Comment", event.comment + author))
     context = [
         ("Host", event.host),
