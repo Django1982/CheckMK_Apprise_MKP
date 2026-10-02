@@ -102,6 +102,29 @@ class SelfSignedTlsTest(unittest.TestCase):
             config = apprise.parse_config(parameters(ca_file="~/server.pem"))
         self.assertEqual(Path(config.ca_file), self.dir / "server.pem")
 
+    def test_ca_file_with_windows_line_endings_is_accepted(self):
+        pem = Path(self.cert).read_bytes().replace(b"\r\n", b"\n").replace(b"\n", b"\r\n")
+        crlf = self.dir / "crlf.pem"
+        crlf.write_bytes(pem)
+        self.assertEqual(apprise.parse_config(parameters(ca_file=str(crlf))).ca_file, str(crlf))
+
+    def test_error_messages_tell_the_causes_apart(self):
+        pem = Path(self.cert).read_text(encoding="utf-8")
+        files = {
+            "leading whitespace": "  " + pem,
+            "byte order mark": "﻿" + pem,
+            "not pem": "hello\n",
+        }
+        for name, content in files.items():
+            path = self.dir / (name.replace(" ", "_") + ".pem")
+            path.write_text(content, encoding="utf-8")
+            with self.subTest(name), self.assertRaises(apprise.ConfigError) as ctx:
+                apprise.validate_ca_file(str(path))
+            self.assertIn("not a valid PEM certificate file", str(ctx.exception))
+        with self.assertRaises(apprise.ConfigError) as ctx:
+            apprise.validate_ca_file(str(self.dir / "absent.pem"))
+        self.assertIn("does not exist", str(ctx.exception))
+
     def test_invalid_ca_files_are_permanent_configuration_errors(self):
         empty = self.dir / "empty.pem"
         empty.write_text("", encoding="utf-8")

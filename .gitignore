@@ -28,3 +28,7 @@ artifacts/
 .env.*
 !.env.example
 .local/
+
+# Certificates and keys stay local (tests create theirs in temporary directories)
+*.pem
+*.key

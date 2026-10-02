@@ -23,7 +23,7 @@ import tarfile
 from pathlib import Path
 
 PACKAGE_NAME = "apprise"
-PACKAGE_VERSION = "0.8.0"  # SemVer
+PACKAGE_VERSION = "0.8.1"  # SemVer
 MIN_CHECKMK = "2.5.0"
 # TODO(M0.2 smoke test): confirm the accepted value for version.packaged on a real 2.5 site.
 PACKAGED_WITH = "2.5.0"

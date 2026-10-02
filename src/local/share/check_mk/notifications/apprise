@@ -155,12 +155,19 @@ def validate_ca_file(raw: str) -> str:
     if len(raw) > 4096 or any(ch < " " or ch == "\x7f" for ch in raw):
         raise ConfigError("CA_FILE is not a valid path")
     path = os.path.expanduser(raw)
+    if not os.path.isfile(path):
+        raise ConfigError("CA_FILE does not exist or is not a regular file")
     try:
-        if not os.path.isfile(path) or os.path.getsize(path) > MAX_CA_FILE_BYTES:
-            raise ConfigError("CA_FILE is not a readable certificate file")
+        if os.path.getsize(path) > MAX_CA_FILE_BYTES:
+            raise ConfigError("CA_FILE is larger than 1 MiB")
         ssl.create_default_context(cafile=path)  # must contain at least one valid PEM certificate
-    except (OSError, ssl.SSLError):
-        raise ConfigError("CA_FILE could not be loaded as a PEM certificate file") from None
+    except PermissionError:
+        raise ConfigError("CA_FILE cannot be read by the site user (check permissions)") from None
+    except ssl.SSLError as error:  # before OSError: SSLError is a subclass of it
+        reason = "".join(ch for ch in str(error.reason or "unknown") if ch.isprintable())[:60]
+        raise ConfigError(f"CA_FILE is not a valid PEM certificate file ({reason})") from None
+    except OSError:
+        raise ConfigError("CA_FILE cannot be read") from None
     return path
 
 
