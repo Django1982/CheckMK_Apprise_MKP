@@ -5,8 +5,8 @@ Only combinations that were actually run are listed as verified. Anything else i
 | Component | Version | Status | Evidence |
 |---|---|---|---|
 | Checkmk | 2.5.x | verified | test site (Python 3.13): install, update, removal, rule form, notifications, password store, failure paths; see `PROJECT_STATUS.md` |
-| Checkmk edition | Community (CE) | install verified | CLI path (`mkp add` / `enable` / `remove`) on a CE site, 2026-10-02; delivery on CE is still to be run |
-| Checkmk edition | Enterprise | verified | GUI upload and enable, rule form, notifications on the test site |
+| Checkmk edition | Community (CE, core `nagios`) | verified | release 1.0.0 downloaded from GitHub, checksum checked, installed with `mkp add` / `enable`, `cmk -R`, delivery to the real Apprise, 2026-10-02 |
+| Checkmk edition | Enterprise (core `cmc`) | verified | release 1.0.0 downloaded from GitHub and installed via GUI upload; earlier builds: rule form, notifications, password store, failure paths |
 | Checkmk | 2.4 and older | not supported | not tested, the extension uses the 2.5 Ruleset API v1 `NotificationParameters` discovery |
 | Apprise | 2.0 | verified | real Apprise -> Signal: plain text and rich text arrive clean; converters cross-checked locally with Apprise 2.0.0 |
 | Apprise | older than 2.0 | not supported | rich text needs the HTML to Markdown converter |
