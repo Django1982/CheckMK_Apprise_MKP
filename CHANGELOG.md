@@ -20,6 +20,7 @@ The project follows Semantic Versioning once release artifacts begin.
 
 ### Fixed
 
+- message format: `markdown` is replaced by `html` (shown as "Rich text"); Apprise converts HTML to plain text, Markdown or HTML per target, whereas it cannot convert Markdown to plain text. Our own Markdown escaping is removed. Rules saved with the unreleased `markdown` value must be set to plain text or rich text again
 - plain text is now the default message format; Apprise has no Markdown->Text converter, so Markdown showed raw `**` and backslashes on text-only targets such as Signal
 - HTTP 204 (and any 2xx other than 200) was reported as delivered; it now fails with exit 2 because nothing was sent
 - a missing `NOTIFY_NOTIFICATIONTYPE` was silently treated as `PROBLEM`; it is now an invalid event (exit 2)

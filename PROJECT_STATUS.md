@@ -18,7 +18,7 @@
 | M0.2 – Technical Skeleton | done | install/enable/uninstall, method selectable, form validation, save/reload verified on a Checkmk 2.5 site (Python 3.13) |
 | M1 – Notification Core | done (mock-verified) | manual Checkmk runs against the mock for host/service problem, recovery, UNKNOWN, downtime start, flapping start, failure paths, Unicode, log inspection. Manual runs still open: acknowledgement, downtime end, custom, flapping stop, host UP (unit-tested only) |
 | M2 – Native Checkmk UX | done (mock-verified) | `NOTIFY_PARAMETER_*` formats confirmed (bool `True`/`False`, int, empty tag omitted); explicit and password-store passwords sent as Basic auth; wrong password -> HTTP 401/exit 2; GUI hides the password; log shows only parameter names |
-| M3 – Routing & Formatting | done (verified on a real target) | Markdown escaping, bold labels, hard line breaks, `html` removed; tag pass-through, type mapping and content bounds from M1; unit-tested. Real Apprise -> Signal (2026-10-02): escaping is applied as designed, but Signal shows Markdown as raw text (backslashes/asterisks visible). Default message format changed to plain text (see Message format finding); no Checkmk deep links (deliberate) |
+| M3 – Routing & Formatting | done (verified on a real target) | Markdown escaping, bold labels, hard line breaks, `html` removed; tag pass-through, type mapping and content bounds from M1; unit-tested. Real Apprise -> Signal (2026-10-02): escaping is applied as designed, but Signal shows Markdown as raw text (backslashes/asterisks visible). Message formats `text` (default) and `html` (rich text); Markdown removed (see Message format finding); no Checkmk deep links (deliberate) |
 | M4 – Hardening | in progress | external review findings applied (see below); HTTPS/TLS manual test pending (maintainer, against a real instance) |
 | M5 – Release Readiness | not started | |
 
@@ -42,7 +42,7 @@ Finish M4: land the classification fixes, then document timeouts/limits and exte
 
 ## Message format finding (2026-10-02)
 
-Real Apprise -> Signal showed raw Markdown. Cause (Apprise sources): the API passes `format` as the input format (`body_format`), and Apprise has no Markdown->Text converter, so text targets get the Markdown unchanged. Plain text input is converted correctly per target. Decision (maintainer + review of the sources): plain text is the default, Markdown is opt-in. Plain text confirmed clean on Signal.
+Real Apprise -> Signal showed raw Markdown. Cause (Apprise sources): the API passes `format` as the input format (`body_format`), and Apprise has no Markdown->Text converter, so text targets get the Markdown unchanged. Plain text input is converted correctly per target. Plain text was confirmed clean on Signal and became the default (PR #10). The maintainer then asked that offering a rich option must also work on text targets. Experiment with Apprise's own converters: HTML input converts cleanly to text, Markdown and HTML for every target, so Markdown was replaced by HTML (rich text).
 
 ## Open items
 
@@ -51,7 +51,8 @@ Real Apprise -> Signal showed raw Markdown. Cause (Apprise sources): the API pas
 - Documentation (M5): configure exactly one recipient in the Checkmk rule; "all contacts" calls the script once per contact and would send duplicates. Repeated 424 means: check routing tags and the Apprise configuration.
 - TLS certificate verification failure stays exit 1 (maintainer decision 2026-10-01, to be re-evaluated after the HTTPS test against the maintainer's real Apprise instance).
 
-- Markdown option on targets that do render it (a Signal URL with `?format=markdown`, Matrix, Discord, mail): not yet tested; escaping backslashes may show on non-CommonMark dialects.
+- Rich text (`html`) on Signal (text target, Apprise 2.0): verified 2026-10-02 (package 0.6.0), arrives as the clean plain layout. Still open: Signal (text target), Signal with `?format=markdown`, Matrix/Discord/mail. Verified so far only with Apprise's converters in a local venv (Apprise 2.0.0): HTML -> text equals the plain layout for all fixtures, HTML -> Markdown gives bold labels. The maintainer's Apprise is 2.0, which is the supported baseline (documented in README and TECHNICAL_SPEC).
+- Backlog (cosmetic): downtime notifications do not say when the downtime ends. First capture the `NOTIFY_*` variables of a real downtime-start notification (temporary dump) to see whether the end time is available, then add it to the message (M3 polish or M5).
 
 ## Blockers
 
@@ -81,6 +82,7 @@ Record only commands that were actually executed.
 | 2026-10-01 | manual M1 against `scripts/mock_apprise.py` via Checkmk | passed | events, failure paths (timeout/503/refused -> exit 1; 400 -> exit 2), Unicode, `notify.log` free of URL/config id/secret |
 | 2026-10-01 | manual M2 via Checkmk against the mock with `--user/--password` | passed | explicit and password-store password, wrong password rejected, GUI secrecy |
 | 2026-10-01 | `python -m unittest discover -s tests/unit` (main + this fix branch) | passed (73 tests) | includes `test_hardening.py`; Python 3.10 locally |
+| 2026-10-02 | manual: package 0.6.0, format Rich text, real Apprise 2.0 -> Signal | passed (reported by maintainer) | message arrives as the plain layout, values verbatim, no markup characters |
 | 2026-10-01 | mutation check of the proxy test | passed | test fails without `ProxyHandler({})` |
 | 2026-10-01 | `python -m ruff check .` / `ruff format` | passed | ruff 0.16.9 |
 | 2026-10-01 | `python scripts/build_mkp.py` | passed | apprise-0.3.1.mkp |

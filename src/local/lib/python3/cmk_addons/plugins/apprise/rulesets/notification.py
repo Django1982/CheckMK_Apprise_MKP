@@ -105,15 +105,15 @@ def _parameter_form() -> Dictionary:
                 parameter_form=SingleChoice(
                     title=Title("Message format"),
                     help_text=Help(
-                        "Plain text is safe for every target: Apprise converts it to what "
-                        "each target needs. Choose Markdown only if all targets render "
-                        "Markdown (for example Apprise URLs with ?format=markdown); targets "
-                        "that do not, such as Signal by default, show the formatting "
-                        "characters as text."
+                        "Apprise converts the message to what each target needs. Plain text "
+                        "is the simplest choice. Rich text adds bold labels where a target "
+                        "supports formatting and falls back to the same plain text on "
+                        "targets that do not (for example Signal). Requires Apprise "
+                        "2.0 or newer."
                     ),
                     elements=[
                         SingleChoiceElement(name="text", title=Title("Plain text")),
-                        SingleChoiceElement(name="markdown", title=Title("Markdown")),
+                        SingleChoiceElement(name="html", title=Title("Rich text")),
                     ],
                     prefill=DefaultValue("text"),
                 ),
