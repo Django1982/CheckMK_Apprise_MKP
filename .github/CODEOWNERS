@@ -1,6 +1,7 @@
-# Intentionally no owner rule yet.
-# M0.1 setup TODO: replace this comment with REAL GitHub account(s) or team(s)
-# before enabling "Require review from Code Owners".
-#
-# Example only (do not copy literally):
-# * @real-maintainer
+# Code owners: GitHub requests a review from these accounts for matching changes.
+# Review is only *required* when the branch ruleset for `main` has
+# "Require review from Code Owners" enabled (see docs/GITHUB_GOVERNANCE.md).
+# With a single maintainer leave that option off, otherwise nobody can approve
+# the maintainer's own pull requests.
+
+* @Django1982
