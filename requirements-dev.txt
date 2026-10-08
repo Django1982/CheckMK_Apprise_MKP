@@ -7,4 +7,4 @@
 #   cross-check tests in tests/unit/test_richtext.py compare our messages with Apprise's own
 #   format converters. Never imported by the plug-in.
 ruff==0.16.9
-apprise==2.0.0
+apprise==2.0.1
