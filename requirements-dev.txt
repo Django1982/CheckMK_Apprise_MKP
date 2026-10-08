@@ -6,5 +6,5 @@
 # apprise: test-only reference for the supported baseline (Apprise 2.0). It lets the
 #   cross-check tests in tests/unit/test_richtext.py compare our messages with Apprise's own
 #   format converters. Never imported by the plug-in.
-ruff==0.16.9
+ruff==0.16.10
 apprise==2.0.0
